@@ -159,6 +159,13 @@ pids
 *.m4a
 *.flac
 *.ogg
+*.mp4
+*.webm
+*.aac
+
+# Upload directories
+backend/uploads/
+uploads/
 *.webm
 *.mp4
 *.avi

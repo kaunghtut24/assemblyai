@@ -1,12 +1,15 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from transcriber import OptimizedTranscriber, AssemblyAITranscriber, TranscriptionError, PerformanceMetrics
 import tempfile
 import os
 import time
 import shutil
+import uuid
+from pathlib import Path
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
@@ -26,6 +29,10 @@ except ImportError:
 
 # Global transcriber instance
 transcriber_instance = None
+
+# Create uploads directory
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -128,17 +135,25 @@ async def transcribe_audio(
         max_size = 500 * 1024 * 1024  # 500MB
         file_size = 0
 
-        # Create temporary file with async file operations
+        # Create unique filename and save to uploads directory
+        file_id = str(uuid.uuid4())
+        file_extension = Path(file.filename).suffix
+        saved_filename = f"{file_id}{file_extension}"
+        saved_file_path = UPLOADS_DIR / saved_filename
+
+        # Also create temporary file for processing
         temp_file_path = tempfile.mktemp(suffix=f"_{file.filename}")
 
         logger.info("Starting file upload",
                    filename=file.filename,
-                   content_type=file.content_type)
+                   content_type=file.content_type,
+                   file_id=file_id)
 
-        # Stream file to disk to handle large files efficiently
+        # Stream file to both temp and permanent locations
         if AIOFILES_AVAILABLE:
             # Use async file operations
-            async with aiofiles.open(temp_file_path, 'wb') as temp_file:
+            async with aiofiles.open(temp_file_path, 'wb') as temp_file, \
+                       aiofiles.open(saved_file_path, 'wb') as saved_file:
                 while chunk := await file.read(8192):  # 8KB chunks
                     file_size += len(chunk)
                     if file_size > max_size:
@@ -147,9 +162,11 @@ async def transcribe_audio(
                             413
                         )
                     await temp_file.write(chunk)
+                    await saved_file.write(chunk)
         else:
             # Fallback to sync file operations
-            with open(temp_file_path, 'wb') as temp_file:
+            with open(temp_file_path, 'wb') as temp_file, \
+                 open(saved_file_path, 'wb') as saved_file:
                 while chunk := await file.read(8192):  # 8KB chunks
                     file_size += len(chunk)
                     if file_size > max_size:
@@ -158,6 +175,7 @@ async def transcribe_audio(
                             413
                         )
                     temp_file.write(chunk)
+                    saved_file.write(chunk)
 
         logger.info("File uploaded successfully",
                    filename=file.filename,
@@ -179,16 +197,25 @@ async def transcribe_audio(
         else:
             raise TranscriptionError("Transcriber not properly initialized", 500)
 
-        # Add performance metrics to response
+        # Add performance metrics and file information to response
         processing_time = time.time() - start_time
         result["processing_time"] = processing_time
         result["file_size_mb"] = file_size / (1024*1024)
+        result["file_info"] = {
+            "original_filename": file.filename,
+            "saved_filename": saved_filename,
+            "file_id": file_id,
+            "file_path": str(saved_file_path),
+            "content_type": file.content_type,
+            "size_bytes": file_size
+        }
 
-        # Schedule cleanup of temp file
+        # Schedule cleanup of temp file (keep saved file)
         background_tasks.add_task(cleanup_temp_file, temp_file_path)
 
         logger.info("Transcription completed successfully",
                    filename=file.filename,
+                   file_id=file_id,
                    processing_time=processing_time,
                    text_length=len(result.get("text", "")))
 
@@ -212,6 +239,26 @@ async def transcribe_audio(
             500,
             {"original_error": str(e)}
         )
+
+@app.get("/audio/{file_id}")
+async def get_audio_file(file_id: str):
+    """
+    Serve uploaded audio files by file ID
+    """
+    try:
+        # Find the file in uploads directory
+        for file_path in UPLOADS_DIR.glob(f"{file_id}.*"):
+            if file_path.is_file():
+                return FileResponse(
+                    path=str(file_path),
+                    media_type="audio/*",
+                    filename=file_path.name
+                )
+
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    except Exception as e:
+        logger.error("Error serving audio file", file_id=file_id, error=str(e))
+        raise HTTPException(status_code=500, detail="Error serving audio file")
 
 @app.get("/metrics")
 async def get_metrics():

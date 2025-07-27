@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useTheme } from '../contexts/ThemeContext';
 
 // Performance monitoring utility
 class TranscriptionRUM {
@@ -46,7 +47,8 @@ class TranscriptionRUM {
 
 const rum = new TranscriptionRUM();
 
-export default function FileUpload({ onTranscribe }) {
+export default function FileUpload({ onTranscribe, onFileSelect }) {
+  const { isDark } = useTheme();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -120,6 +122,7 @@ export default function FileUpload({ onTranscribe }) {
 
       setProgress(100);
       onTranscribe(result);
+      onFileSelect?.(file); // Pass the audio file for playback
 
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -186,28 +189,42 @@ export default function FileUpload({ onTranscribe }) {
     <div className="space-y-4">
       {/* Drag and Drop Area */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragOver
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          ${dragOver
+            ? isDark
+              ? 'border-blue-400 bg-blue-900/20'
+              : 'border-blue-500 bg-blue-50'
+            : isDark
+              ? 'border-gray-600 hover:border-gray-500 bg-gray-800'
+              : 'border-gray-300 hover:border-gray-400 bg-white'
+          }
+        `}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <div className="space-y-2">
-          <div className="text-gray-600">
+          <div className={isDark ? 'text-gray-300' : 'text-gray-600'}>
             {file ? (
               <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {file.name}
+                </p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {(file.size / (1024*1024)).toFixed(2)} MB
                 </p>
               </div>
             ) : (
               <div>
                 <p>Drag and drop your audio file here, or</p>
-                <label className="text-blue-600 hover:text-blue-700 cursor-pointer underline">
+                <label className={`
+                  cursor-pointer underline transition-colors
+                  ${isDark
+                    ? 'text-blue-400 hover:text-blue-300'
+                    : 'text-blue-600 hover:text-blue-700'
+                  }
+                `}>
                   browse files
                   <input
                     type="file"
@@ -224,21 +241,27 @@ export default function FileUpload({ onTranscribe }) {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-red-700 text-sm">{error}</p>
+        <div className={`
+          border rounded-lg p-3
+          ${isDark
+            ? 'bg-red-900/20 border-red-800 text-red-300'
+            : 'bg-red-50 border-red-200 text-red-700'
+          }
+        `}>
+          <p className="text-sm">{error}</p>
         </div>
       )}
 
       {/* Progress Bar */}
       {loading && (
         <div className="space-y-2">
-          <div className="bg-gray-200 rounded-full h-2">
+          <div className={`rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-sm text-gray-600 text-center">
+          <p className={`text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
             Transcribing... {progress}%
           </p>
         </div>
@@ -249,7 +272,17 @@ export default function FileUpload({ onTranscribe }) {
         <button
           onClick={uploadAndTranscribe}
           disabled={!file || loading}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          className={`
+            flex-1 px-4 py-2 rounded-lg font-medium transition-colors
+            ${!file || loading
+              ? isDark
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-400 text-white cursor-not-allowed'
+              : isDark
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }
+          `}
         >
           {loading ? "Transcribing..." : "Transcribe Audio"}
         </button>
@@ -257,7 +290,13 @@ export default function FileUpload({ onTranscribe }) {
         {loading && (
           <button
             onClick={cancelTranscription}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className={`
+              px-4 py-2 border rounded-lg transition-colors
+              ${isDark
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }
+            `}
           >
             Cancel
           </button>
@@ -270,7 +309,13 @@ export default function FileUpload({ onTranscribe }) {
               setError(null);
               setProgress(0);
             }}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className={`
+              px-4 py-2 border rounded-lg transition-colors
+              ${isDark
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }
+            `}
           >
             Clear
           </button>

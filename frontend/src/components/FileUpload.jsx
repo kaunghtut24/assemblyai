@@ -190,7 +190,7 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
       {/* Drag and Drop Area */}
       <div
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors touch-manipulation
           ${dragOver
             ? isDark
               ? 'border-blue-400 bg-blue-900/20'
@@ -204,11 +204,12 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className={isDark ? 'text-gray-300' : 'text-gray-600'}>
             {file ? (
-              <div>
-                <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className="space-y-2">
+                <div className="text-4xl">📁</div>
+                <p className={`font-medium text-base sm:text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {file.name}
                 </p>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -216,23 +217,30 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
                 </p>
               </div>
             ) : (
-              <div>
-                <p>Drag and drop your audio file here, or</p>
-                <label className={`
-                  cursor-pointer underline transition-colors
-                  ${isDark
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-blue-600 hover:text-blue-700'
-                  }
-                `}>
-                  browse files
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="audio/*,video/*,.mp3,.wav,.mp4,.m4a,.webm,.flac,.ogg"
-                    onChange={handleFileChange}
-                  />
-                </label>
+              <div className="space-y-3">
+                <div className="text-4xl">🎵</div>
+                <div>
+                  <p className="text-base sm:text-lg mb-2">Drag and drop your audio file here</p>
+                  <p className="text-sm mb-3">or</p>
+                  <label className={`
+                    inline-block px-4 py-3 sm:px-6 sm:py-2 rounded-lg font-medium cursor-pointer transition-colors touch-manipulation min-h-[44px] flex items-center justify-center
+                    ${isDark
+                      ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white'
+                    }
+                  `}>
+                    Choose File
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="audio/*,video/*,.mp3,.wav,.mp4,.m4a,.webm,.flac,.ogg"
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Supports: MP3, WAV, MP4, M4A, WebM, FLAC, OGG (max 500MB)
+                </p>
               </div>
             )}
           </div>
@@ -268,58 +276,60 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
         <button
           onClick={uploadAndTranscribe}
           disabled={!file || loading}
           className={`
-            flex-1 px-4 py-2 rounded-lg font-medium transition-colors
+            flex-1 px-4 py-3 sm:py-2 rounded-lg font-medium transition-colors touch-manipulation min-h-[44px] sm:min-h-0
             ${!file || loading
               ? isDark
                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                 : 'bg-gray-400 text-white cursor-not-allowed'
               : isDark
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
             }
           `}
         >
           {loading ? "Transcribing..." : "Transcribe Audio"}
         </button>
 
-        {loading && (
-          <button
-            onClick={cancelTranscription}
-            className={`
-              px-4 py-2 border rounded-lg transition-colors
-              ${isDark
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              }
-            `}
-          >
-            Cancel
-          </button>
-        )}
+        <div className="flex gap-2">
+          {loading && (
+            <button
+              onClick={cancelTranscription}
+              className={`
+                px-4 py-3 sm:py-2 border rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0
+                ${isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700 active:bg-gray-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                }
+              `}
+            >
+              Cancel
+            </button>
+          )}
 
-        {file && !loading && (
-          <button
-            onClick={() => {
-              setFile(null);
-              setError(null);
-              setProgress(0);
-            }}
-            className={`
-              px-4 py-2 border rounded-lg transition-colors
-              ${isDark
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              }
-            `}
-          >
-            Clear
-          </button>
-        )}
+          {file && !loading && (
+            <button
+              onClick={() => {
+                setFile(null);
+                setError(null);
+                setProgress(0);
+              }}
+              className={`
+                px-4 py-3 sm:py-2 border rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0
+                ${isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700 active:bg-gray-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                }
+              `}
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

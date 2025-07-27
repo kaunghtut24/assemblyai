@@ -7,9 +7,9 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className={`
-        relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        ${isDark 
-          ? 'bg-blue-600 focus:ring-offset-gray-800' 
+        relative inline-flex h-8 w-14 sm:h-6 sm:w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation
+        ${isDark
+          ? 'bg-blue-600 focus:ring-offset-gray-800'
           : 'bg-gray-200 focus:ring-offset-white'
         }
       `}
@@ -17,20 +17,20 @@ export default function ThemeToggle() {
     >
       <span
         className={`
-          inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out
-          ${isDark ? 'translate-x-6' : 'translate-x-1'}
+          inline-block h-6 w-6 sm:h-4 sm:w-4 transform rounded-full bg-white transition duration-200 ease-in-out
+          ${isDark ? 'translate-x-7 sm:translate-x-6' : 'translate-x-1'}
         `}
       />
       
       {/* Sun icon */}
       <span
         className={`
-          absolute left-1 top-1 h-4 w-4 transition-opacity duration-200
+          absolute left-1.5 top-1 sm:left-1 sm:top-1 h-5 w-5 sm:h-4 sm:w-4 transition-opacity duration-200
           ${isDark ? 'opacity-0' : 'opacity-100'}
         `}
       >
         <svg
-          className="h-4 w-4 text-yellow-500"
+          className="h-5 w-5 sm:h-4 sm:w-4 text-yellow-500"
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -45,12 +45,12 @@ export default function ThemeToggle() {
       {/* Moon icon */}
       <span
         className={`
-          absolute right-1 top-1 h-4 w-4 transition-opacity duration-200
+          absolute right-1.5 top-1 sm:right-1 sm:top-1 h-5 w-5 sm:h-4 sm:w-4 transition-opacity duration-200
           ${isDark ? 'opacity-100' : 'opacity-0'}
         `}
       >
         <svg
-          className="h-4 w-4 text-blue-300"
+          className="h-5 w-5 sm:h-4 sm:w-4 text-blue-300"
           fill="currentColor"
           viewBox="0 0 20 20"
         >

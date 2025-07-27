@@ -100,18 +100,18 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
       ${isDark ? 'border-gray-700' : 'border-gray-200'}
     `}>
       {/* Header with actions */}
-      <div className="flex items-center justify-between">
-        <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <h2 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
           Transcript Results
         </h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={copyToClipboard}
             className={`
-              px-3 py-1 text-sm rounded-md transition-colors
+              flex-1 sm:flex-none px-3 py-2 sm:py-1 text-sm rounded-md transition-colors touch-manipulation min-h-[44px] sm:min-h-0
               ${isDark
-                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                ? 'bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-gray-200'
+                : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700'
               }
             `}
           >
@@ -120,10 +120,10 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
           <button
             onClick={downloadTranscript}
             className={`
-              px-3 py-1 text-sm rounded-md transition-colors
+              flex-1 sm:flex-none px-3 py-2 sm:py-1 text-sm rounded-md transition-colors touch-manipulation min-h-[44px] sm:min-h-0
               ${isDark
-                ? 'bg-blue-700 hover:bg-blue-600 text-blue-100'
-                : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                ? 'bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-blue-100'
+                : 'bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-700'
               }
             `}
           >
@@ -134,7 +134,7 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
 
       {/* Performance metrics */}
       <div className={`
-        grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg
+        grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg
         ${isDark ? 'bg-gray-800' : 'bg-gray-50'}
       `}>
         <div className="text-center">
@@ -165,13 +165,13 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
 
       {/* Main transcript text */}
       <div className={`
-        border rounded-lg p-4
+        border rounded-lg p-4 sm:p-6 min-h-[200px] mobile-scroll
         ${isDark
           ? 'bg-gray-800 border-gray-700'
           : 'bg-white border-gray-200'
         }
       `}>
-        <div className="prose max-w-none">
+        <div className="prose max-w-none text-sm sm:text-base">
           {renderTranscriptText()}
         </div>
       </div>
@@ -182,10 +182,10 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
           <button
             onClick={() => setShowWords(!showWords)}
             className={`
-              text-sm underline transition-colors
+              text-sm underline transition-colors touch-manipulation min-h-[44px] sm:min-h-0 py-2 sm:py-0
               ${isDark
-                ? 'text-blue-400 hover:text-blue-300'
-                : 'text-blue-600 hover:text-blue-700'
+                ? 'text-blue-400 hover:text-blue-300 active:text-blue-500'
+                : 'text-blue-600 hover:text-blue-700 active:text-blue-800'
               }
             `}
           >
@@ -194,7 +194,7 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
 
           {showWords && (
             <div className={`
-              border rounded-lg p-4 max-h-64 overflow-y-auto
+              border rounded-lg p-3 sm:p-4 max-h-48 sm:max-h-64 overflow-y-auto mobile-scroll
               ${isDark
                 ? 'bg-gray-800 border-gray-700'
                 : 'bg-gray-50 border-gray-200'

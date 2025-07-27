@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+assemblyai
+python-dotenv
+pydantic
+backoff
+python-multipart
+aiofiles
+aiohttp
+redis
+psutil
+structlog

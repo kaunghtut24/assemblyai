@@ -1,7 +1,7 @@
 
-# 🚀 AssemblyAI Transcriber App (Performance Optimized Edition)
+# 🚀 Audio Transcriber App - Complete Edition
 
-A high-performance, production-ready full-stack transcription app built with **FastAPI** & **React (Vite)**, powered by **AssemblyAI** with advanced optimizations.
+A feature-rich, mobile-optimized full-stack transcription app built with **FastAPI** & **React (Vite)**, powered by **AssemblyAI** with theme system, audio playback, and comprehensive mobile support.
 
 ---
 
@@ -16,13 +16,29 @@ A high-performance, production-ready full-stack transcription app built with **F
 - 🔄 Request caching for improved performance
 - ⚡ Async processing with connection pooling
 
-### 💡 User Experience
+### 🎨 Theme & UI Features
+- 🌙 **Dark/Light Theme Toggle** with system preference detection
+- � **Theme Persistence** using localStorage
+- 🎯 **Responsive Design** optimized for all screen sizes
+- 📱 **Mobile-First** approach with touch-friendly interfaces
+- ✨ **Smooth Animations** and transitions throughout the app
+
+### 🎵 Audio Features
+- 🎧 **Audio Playback** with full media controls (play, pause, seek)
+- 📍 **Word Synchronization** - highlights transcript words during playback
+- ⏯️ **Playback Controls** with volume adjustment and progress tracking
+- 🔄 **Audio File Storage** with unique ID system for persistent access
+- 🎚️ **Interactive Progress Bar** with click-to-seek functionality
+
+### �💡 User Experience
 - 🖱️ Drag & drop file upload with validation
 - 📶 Real-time progress tracking
 - 🔔 Enhanced error handling and notifications
 - ♻️ Transcript history management
 - 🎯 File size and type validation
 - ⏹️ Cancellable uploads
+- 📱 **Mobile Optimized** with 44px minimum touch targets
+- 👆 **Touch Support** for all interactive elements
 
 ### 🚀 Performance Optimizations
 - **Backend Optimizations:**
@@ -39,6 +55,22 @@ A high-performance, production-ready full-stack transcription app built with **F
   - Efficient file validation
   - Memory usage tracking
   - Progressive enhancement
+  - React Context for state management
+  - Optimized re-renders with useCallback/useMemo
+
+### 📱 Mobile Optimizations
+- **Touch-First Design:**
+  - 44px minimum touch targets for accessibility
+  - Touch event handlers for audio controls
+  - Responsive breakpoints (mobile-first approach)
+  - Optimized scrolling with momentum on iOS
+
+- **Mobile UX Enhancements:**
+  - Stacked layouts on small screens
+  - Larger interactive elements for touch
+  - Prevented zoom on input focus (iOS)
+  - Enhanced visual feedback with active states
+  - Mobile-optimized typography and spacing
 
 ---
 
@@ -84,29 +116,51 @@ cd frontend
 npm run dev
 ```
 
-Visit `http://localhost:5173` to use the application.
+Visit `http://localhost:3001` to use the application.
+
+### 🎮 Using the Application
+
+1. **Upload Audio/Video**: Drag & drop or click to select files
+2. **Theme Toggle**: Click the sun/moon icon to switch between light/dark themes
+3. **Transcription**: Wait for AssemblyAI to process your file
+4. **Audio Playback**: Use the audio player to listen while reading the transcript
+5. **Word Highlighting**: Watch words highlight in real-time during playback
+6. **Mobile Experience**: Enjoy full functionality on mobile devices with optimized touch controls
 
 ---
 
 ## 📁 Project Structure
 ```
-assemblyai/
+audio-transcriber-app-refined/
 ├── backend/
 │   ├── app.py              # FastAPI application with optimizations
 │   ├── transcriber.py      # Optimized AssemblyAI integration
 │   ├── requirements.txt    # Python dependencies
+│   ├── uploads/           # Audio file storage directory
 │   └── .env               # Environment variables
 ├── frontend/
 │   ├── src/
 │   │   ├── components/    # React components
-│   │   │   ├── FileUpload.jsx        # Enhanced file upload
-│   │   │   ├── TranscriptDisplay.jsx # Rich transcript display
-│   │   │   └── PerformanceMonitor.jsx # Performance metrics
-│   │   ├── App.jsx       # Main application
-│   │   └── main.jsx      # Entry point
+│   │   │   ├── FileUpload.jsx        # Enhanced drag & drop upload
+│   │   │   ├── TranscriptDisplay.jsx # Rich transcript with mobile support
+│   │   │   ├── AudioPlayer.jsx       # Audio playback with word sync
+│   │   │   └── ThemeToggle.jsx       # Dark/light theme switcher
+│   │   ├── contexts/
+│   │   │   └── ThemeContext.jsx      # Theme state management
+│   │   ├── App.jsx       # Main application with responsive layout
+│   │   ├── main.jsx      # Entry point
+│   │   └── index.css     # Global styles with mobile optimizations
 │   ├── package.json      # Node.js dependencies
-│   └── vite.config.js    # Vite configuration
+│   ├── vite.config.js    # Vite configuration
+│   ├── tailwind.config.js # Tailwind CSS with dark mode
+│   └── index.html        # HTML with mobile meta tags
 ├── .gitignore            # Git ignore rules
+├── .env.example          # Environment template
+├── LICENSE               # MIT License
+├── DEPLOYMENT.md         # Deployment instructions
+├── Procfile              # Heroku deployment
+├── railway.json          # Railway deployment
+├── vercel.json           # Vercel deployment
 └── README.md            # This file
 ```
 
@@ -149,6 +203,7 @@ npm run build
 ### Environment Variables for Production
 - `ASSEMBLYAI_API_KEY`: Your AssemblyAI API key
 - `CORS_ORIGINS`: Allowed origins (e.g., `https://yourapp.vercel.app`)
+- `UPLOAD_DIR`: Directory for audio file storage (default: `uploads/`)
 
 ---
 
@@ -167,6 +222,22 @@ OptimizedTranscriber(
 ### Monitoring Endpoints
 - Performance metrics: `http://localhost:8000/metrics`
 - Health check: `http://localhost:8000/health`
+- Audio files: `http://localhost:8000/audio/{file_id}`
+
+### 🎨 Theme System
+The app includes a comprehensive theme system:
+- **Auto-detection**: Respects system dark/light mode preference
+- **Manual toggle**: Sun/moon icon for easy switching
+- **Persistence**: Remembers your choice in localStorage
+- **Responsive**: Optimized colors for both themes across all components
+
+### 📱 Mobile Features
+- **Touch-optimized controls**: All buttons meet 44px minimum touch target
+- **Responsive layouts**: Mobile-first design with proper breakpoints
+- **Audio controls**: Touch-friendly progress bar and volume controls
+- **Theme toggle**: Larger mobile-optimized toggle switch
+- **Smooth scrolling**: Momentum scrolling on iOS devices
+- **No zoom on input**: Prevents unwanted zoom on form inputs
 
 ---
 
@@ -184,8 +255,33 @@ MIT License
 
 ---
 
+## 🎯 Key Technologies
+
+### Backend
+- **FastAPI**: High-performance async web framework
+- **AssemblyAI**: Advanced speech-to-text API
+- **Uvicorn**: Lightning-fast ASGI server
+- **Aiofiles**: Async file operations
+- **Structlog**: Structured logging
+
+### Frontend
+- **React 18**: Modern UI library with hooks
+- **Vite**: Next-generation build tool
+- **Tailwind CSS**: Utility-first CSS framework
+- **React Context**: State management for themes
+- **Web Audio API**: Audio playback and control
+
+### Mobile & Accessibility
+- **Responsive Design**: Mobile-first approach
+- **Touch Events**: Native touch support
+- **ARIA Labels**: Screen reader accessibility
+- **44px Touch Targets**: Mobile accessibility standard
+
+---
+
 ## 🙏 Acknowledgments
 - [AssemblyAI](https://www.assemblyai.com) for the powerful transcription API
 - [FastAPI](https://fastapi.tiangolo.com) for the high-performance backend framework
 - [React](https://reactjs.org) + [Vite](https://vitejs.dev) for the modern frontend stack
 - [Tailwind CSS](https://tailwindcss.com) for the utility-first styling
+- Mobile accessibility guidelines for touch target standards

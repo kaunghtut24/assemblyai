@@ -10,6 +10,7 @@ export default function AudioPlayer({ audioFile, transcript, onWordHighlight }) 
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const [currentSpeaker, setCurrentSpeaker] = useState(null);
 
   // Create audio URL from file or file info
   const audioUrl = useMemo(() => {
@@ -43,10 +44,21 @@ export default function AudioPlayer({ audioFile, transcript, onWordHighlight }) 
           const nextWord = transcript.words[index + 1];
           return time >= word.start && (!nextWord || time < nextWord.start);
         });
-        
+
         if (currentWord !== currentWordIndex) {
           setCurrentWordIndex(currentWord);
           onWordHighlight?.(currentWord);
+        }
+      }
+
+      // Find current speaker if utterances are available
+      if (transcript?.utterances) {
+        const currentUtterance = transcript.utterances.find(utterance =>
+          time >= utterance.start && time <= utterance.end
+        );
+
+        if (currentUtterance && currentUtterance.speaker !== currentSpeaker) {
+          setCurrentSpeaker(currentUtterance.speaker);
         }
       }
     };
@@ -187,6 +199,55 @@ export default function AudioPlayer({ audioFile, transcript, onWordHighlight }) 
           />
         </div>
       </div>
+
+      {/* Speaker Navigation */}
+      {transcript?.utterances && transcript.utterances.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Speaker Navigation
+            </h4>
+            {currentSpeaker && (
+              <span className={`
+                inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                ${isDark
+                  ? 'bg-blue-600 text-blue-100'
+                  : 'bg-blue-100 text-blue-800'
+                }
+              `}>
+                Current: Speaker {currentSpeaker}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {Array.from(new Set(transcript.utterances.map(u => u.speaker))).sort().map(speaker => (
+              <button
+                key={speaker}
+                onClick={() => {
+                  const firstUtterance = transcript.utterances.find(u => u.speaker === speaker);
+                  if (firstUtterance && audioRef.current) {
+                    audioRef.current.currentTime = firstUtterance.start / 1000;
+                  }
+                }}
+                className={`
+                  px-3 py-2 text-sm rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0
+                  ${currentSpeaker === speaker
+                    ? isDark
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500 text-white'
+                    : isDark
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  }
+                `}
+              >
+                Speaker {speaker}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

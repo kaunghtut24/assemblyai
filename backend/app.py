@@ -113,15 +113,23 @@ async def transcribe_audio(
     file: UploadFile = File(...),
     speech_model: str = "slam-1",
     language_code: str = None,
-    enable_caching: bool = True
+    enable_caching: bool = True,
+    speaker_labels: bool = False,
+    speakers_expected: int = None,
+    min_speakers_expected: int = None,
+    max_speakers_expected: int = None
 ):
     """
-    Transcribe audio file with optimized performance
+    Transcribe audio file with optimized performance and speaker diarization
 
     - **file**: Audio file to transcribe (supports various formats)
     - **speech_model**: AssemblyAI speech model to use (default: slam-1)
     - **language_code**: Language code for transcription (optional)
     - **enable_caching**: Whether to enable result caching (default: true)
+    - **speaker_labels**: Enable speaker diarization (default: false)
+    - **speakers_expected**: Expected number of speakers (optional)
+    - **min_speakers_expected**: Minimum number of speakers (optional)
+    - **max_speakers_expected**: Maximum number of speakers (optional)
     """
     start_time = time.time()
     temp_file_path = None
@@ -189,7 +197,11 @@ async def transcribe_audio(
                     temp_file_path,
                     speech_model=speech_model,
                     language_code=language_code,
-                    enable_caching=enable_caching
+                    enable_caching=enable_caching,
+                    speaker_labels=speaker_labels,
+                    speakers_expected=speakers_expected,
+                    min_speakers_expected=min_speakers_expected,
+                    max_speakers_expected=max_speakers_expected
                 )
             else:
                 # Basic transcriber (sync)

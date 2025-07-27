@@ -57,6 +57,91 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
     return `${sizeMB.toFixed(2)} MB`;
   };
 
+  // Render transcript with speaker diarization
+  const renderSpeakerTranscript = () => {
+    if (!result.utterances || result.utterances.length === 0) {
+      return renderTranscriptText();
+    }
+
+    return (
+      <div className="space-y-4">
+        {result.utterances.map((utterance, utteranceIndex) => (
+          <div
+            key={utteranceIndex}
+            className={`
+              border-l-4 pl-4 py-2 rounded-r-lg
+              ${isDark
+                ? 'border-blue-500 bg-gray-800/50'
+                : 'border-blue-500 bg-blue-50/50'
+              }
+            `}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`
+                inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                ${isDark
+                  ? 'bg-blue-600 text-blue-100'
+                  : 'bg-blue-100 text-blue-800'
+                }
+              `}>
+                Speaker {utterance.speaker}
+              </span>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {formatTime(utterance.start / 1000)} - {formatTime(utterance.end / 1000)}
+              </span>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {formatConfidence(utterance.confidence)}
+              </span>
+            </div>
+
+            <div className="leading-relaxed">
+              {utterance.words && utterance.words.length > 0 ? (
+                utterance.words.map((word, wordIndex) => {
+                  // Find global word index for highlighting
+                  const globalWordIndex = result.words ?
+                    result.words.findIndex(w => w.start === word.start && w.text === word.text) : -1;
+
+                  return (
+                    <span
+                      key={wordIndex}
+                      className={`
+                        transition-all duration-200 cursor-pointer
+                        ${globalWordIndex === highlightedWordIndex
+                          ? isDark
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-blue-500 text-white shadow-lg'
+                          : isDark
+                            ? 'text-gray-100 hover:bg-gray-700'
+                            : 'text-gray-900 hover:bg-gray-100'
+                        }
+                        ${globalWordIndex === highlightedWordIndex ? 'px-1 rounded' : ''}
+                      `}
+                      title={`${word.start}ms - ${word.end}ms (${formatConfidence(word.confidence)})`}
+                    >
+                      {word.text}
+                      {wordIndex < utterance.words.length - 1 ? ' ' : ''}
+                    </span>
+                  );
+                })
+              ) : (
+                <p className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                  {utterance.text}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Format time in MM:SS format
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Render transcript with word highlighting
   const renderTranscriptText = () => {
     if (!result.words || result.words.length === 0) {
@@ -172,7 +257,10 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
         }
       `}>
         <div className="prose max-w-none text-sm sm:text-base">
-          {renderTranscriptText()}
+          {result.speaker_labels_enabled && result.utterances && result.utterances.length > 0
+            ? renderSpeakerTranscript()
+            : renderTranscriptText()
+          }
         </div>
       </div>
 

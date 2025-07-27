@@ -26,6 +26,8 @@ A feature-rich, mobile-optimized full-stack transcription app built with **FastA
 ### 🎵 Audio Features
 - 🎧 **Audio Playback** with full media controls (play, pause, seek)
 - 📍 **Word Synchronization** - highlights transcript words during playback
+- 🎤 **Speaker Diarization** - automatically detect and separate multiple speakers
+- 👥 **Speaker Navigation** - jump between different speakers during playback
 - ⏯️ **Playback Controls** with volume adjustment and progress tracking
 - 🔄 **Audio File Storage** with unique ID system for persistent access
 - 🎚️ **Interactive Progress Bar** with click-to-seek functionality
@@ -121,11 +123,35 @@ Visit `http://localhost:3001` to use the application.
 ### 🎮 Using the Application
 
 1. **Upload Audio/Video**: Drag & drop or click to select files
-2. **Theme Toggle**: Click the sun/moon icon to switch between light/dark themes
-3. **Transcription**: Wait for AssemblyAI to process your file
-4. **Audio Playback**: Use the audio player to listen while reading the transcript
-5. **Word Highlighting**: Watch words highlight in real-time during playback
-6. **Mobile Experience**: Enjoy full functionality on mobile devices with optimized touch controls
+2. **Speaker Settings**: Configure speaker diarization options (auto-detect, exact number, or range)
+3. **Theme Toggle**: Click the sun/moon icon to switch between light/dark themes
+4. **Transcription**: Wait for AssemblyAI to process your file with speaker detection
+5. **Audio Playback**: Use the audio player to listen while reading the transcript
+6. **Speaker Navigation**: Jump between different speakers using the speaker buttons
+7. **Word Highlighting**: Watch words highlight in real-time during playback
+8. **Mobile Experience**: Enjoy full functionality on mobile devices with optimized touch controls
+
+### 🎤 Speaker Diarization Features
+
+**What is Speaker Diarization?**
+Speaker diarization automatically identifies and separates different speakers in audio recordings, labeling each speaker as A, B, C, etc.
+
+**Configuration Options:**
+- **Auto-detect**: Let AI automatically determine the number of speakers (1-10)
+- **Exact number**: Specify if you know exactly how many speakers are present
+- **Speaker range**: Set minimum and maximum expected speakers
+
+**Best Practices:**
+- Each speaker should speak for at least 30 seconds
+- Avoid overlapping speech when possible
+- Clear audio quality improves accuracy
+- Works best with distinct voices
+
+**Speaker Navigation:**
+- View current speaker during playback
+- Click speaker buttons to jump to their first utterance
+- Speaker-separated transcript with color coding
+- Timing and confidence information for each speaker segment
 
 ---
 

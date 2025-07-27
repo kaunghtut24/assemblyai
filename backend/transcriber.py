@@ -165,7 +165,11 @@ class OptimizedTranscriber:
         file_path: str,
         speech_model: str = "slam-1",
         language_code: Optional[str] = None,
-        enable_caching: bool = True
+        enable_caching: bool = True,
+        speaker_labels: bool = False,
+        speakers_expected: Optional[int] = None,
+        min_speakers_expected: Optional[int] = None,
+        max_speakers_expected: Optional[int] = None
     ) -> Dict[str, Any]:
         """Optimized transcription with caching and async processing"""
         metrics = PerformanceMetrics()
@@ -174,7 +178,11 @@ class OptimizedTranscriber:
             # Create config for caching
             config = json.dumps({
                 "speech_model": speech_model,
-                "language_code": language_code or "en"
+                "language_code": language_code or "en",
+                "speaker_labels": speaker_labels,
+                "speakers_expected": speakers_expected,
+                "min_speakers_expected": min_speakers_expected,
+                "max_speakers_expected": max_speakers_expected
             }, sort_keys=True)
 
             # Check cache first
@@ -192,10 +200,24 @@ class OptimizedTranscriber:
             transcriber = aai.Transcriber()
 
             # Configure transcription options
-            config_obj = aai.TranscriptionConfig(
-                speech_model=speech_model,
-                language_code=language_code
-            )
+            config_kwargs = {
+                "speech_model": speech_model,
+                "language_code": language_code,
+                "speaker_labels": speaker_labels
+            }
+
+            # Add speaker options if specified
+            if speakers_expected is not None:
+                config_kwargs["speakers_expected"] = speakers_expected
+            elif min_speakers_expected is not None or max_speakers_expected is not None:
+                speaker_options = {}
+                if min_speakers_expected is not None:
+                    speaker_options["min_speakers_expected"] = min_speakers_expected
+                if max_speakers_expected is not None:
+                    speaker_options["max_speakers_expected"] = max_speakers_expected
+                config_kwargs["speaker_options"] = speaker_options
+
+            config_obj = aai.TranscriptionConfig(**config_kwargs)
 
             logger.info("Starting transcription", file_path=file_path, config=config)
 
@@ -216,7 +238,9 @@ class OptimizedTranscriber:
                 "id": transcript.id,
                 "status": "completed",
                 "audio_duration": getattr(transcript, 'audio_duration', None),
-                "words": getattr(transcript, 'words', []) if hasattr(transcript, 'words') else []
+                "words": getattr(transcript, 'words', []) if hasattr(transcript, 'words') else [],
+                "utterances": getattr(transcript, 'utterances', []) if hasattr(transcript, 'utterances') else [],
+                "speaker_labels_enabled": speaker_labels
             }
 
             # Cache successful result

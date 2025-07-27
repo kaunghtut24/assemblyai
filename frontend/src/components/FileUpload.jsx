@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useTheme } from '../contexts/ThemeContext';
+import SpeakerSettings from './SpeakerSettings';
 
 // Performance monitoring utility
 class TranscriptionRUM {
@@ -56,6 +57,12 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
   const [dragOver, setDragOver] = useState(false);
   const abortControllerRef = useRef(null);
 
+  // Speaker diarization settings
+  const [speakerLabels, setSpeakerLabels] = useState(false);
+  const [speakersExpected, setSpeakersExpected] = useState(null);
+  const [minSpeakersExpected, setMinSpeakersExpected] = useState(null);
+  const [maxSpeakersExpected, setMaxSpeakersExpected] = useState(null);
+
   // File validation
   const validateFile = useCallback((file) => {
     const maxSize = 500 * 1024 * 1024; // 500MB
@@ -93,6 +100,20 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
       const operation = async () => {
         const formData = new FormData();
         formData.append("file", file);
+
+        // Add speaker diarization parameters
+        if (speakerLabels) {
+          formData.append("speaker_labels", "true");
+          if (speakersExpected !== null) {
+            formData.append("speakers_expected", speakersExpected.toString());
+          }
+          if (minSpeakersExpected !== null) {
+            formData.append("min_speakers_expected", minSpeakersExpected.toString());
+          }
+          if (maxSpeakersExpected !== null) {
+            formData.append("max_speakers_expected", maxSpeakersExpected.toString());
+          }
+        }
 
         // Enhanced fetch with progress tracking
         const response = await fetch("http://localhost:8000/transcribe", {
@@ -331,6 +352,20 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
           )}
         </div>
       </div>
+
+      {/* Speaker Settings */}
+      {file && !loading && (
+        <SpeakerSettings
+          speakerLabels={speakerLabels}
+          setSpeakerLabels={setSpeakerLabels}
+          speakersExpected={speakersExpected}
+          setSpeakersExpected={setSpeakersExpected}
+          minSpeakersExpected={minSpeakersExpected}
+          setMinSpeakersExpected={setMinSpeakersExpected}
+          maxSpeakersExpected={maxSpeakersExpected}
+          setMaxSpeakersExpected={setMaxSpeakersExpected}
+        />
+      )}
     </div>
   );
 }

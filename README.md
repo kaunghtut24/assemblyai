@@ -79,11 +79,56 @@ A feature-rich, mobile-optimized full-stack transcription app built with **FastA
 ## 🛠️ Setup & Installation
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- AssemblyAI API Key ([Get one here](https://www.assemblyai.com))
+- **Python 3.8+** with pip
+- **Node.js 16+** with npm
+- **AssemblyAI API Key** ([Get one free](https://www.assemblyai.com/dashboard/signup))
 
-### Quick Start
+### 🚀 Easy Startup (Recommended)
+
+We provide convenient startup scripts that automatically start both frontend and backend servers:
+
+#### 🐧 Linux/macOS
+```bash
+# Make the script executable (first time only)
+chmod +x start-servers.sh
+
+# Start both servers
+./start-servers.sh
+```
+
+#### 🪟 Windows
+
+**Option 1: Command Prompt**
+```cmd
+start-servers.bat
+```
+
+**Option 2: PowerShell (Recommended)**
+```powershell
+# You may need to allow script execution first (run as Administrator):
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Start both servers
+.\start-servers.ps1
+
+# Optional: Don't open browser automatically
+.\start-servers.ps1 -NoBrowser
+```
+
+**✨ What the startup scripts do:**
+- ✅ Check all prerequisites (Python, Node.js, npm)
+- ✅ Verify environment configuration files exist
+- ✅ Create Python virtual environment if needed
+- ✅ Install dependencies automatically
+- ✅ Start backend server on `http://localhost:8000`
+- ✅ Start frontend server on `http://localhost:3001`
+- ✅ Open the app in your default browser
+- ✅ Handle cleanup when you stop the servers
+
+### 🔧 Manual Setup
+
+If you prefer to set up manually:
+
 ```bash
 # Clone the repository
 git clone https://github.com/kaunghtut24/assemblyai.git

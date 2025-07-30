@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from '../contexts/ThemeContext';
+import { buildApiUrl } from '../config/api';
 
 export default function PerformanceMonitor() {
   const { isDark } = useTheme();
@@ -9,7 +10,7 @@ export default function PerformanceMonitor() {
   const fetchMetrics = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/metrics");
+      const response = await fetch(buildApiUrl("/metrics"));
       const data = await response.json();
       setMetrics(data);
     } catch (error) {

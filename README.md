@@ -101,9 +101,26 @@ npm install
 ```
 
 ### Environment Configuration
+
+#### Backend Configuration
 Create `.env` file in the `backend` directory:
 ```env
+# Required: AssemblyAI API Key
 ASSEMBLYAI_API_KEY=your_api_key_here
+
+# CORS Configuration (comma-separated origins)
+CORS_ORIGINS=http://localhost:3000
+
+# Server Configuration
+PORT=8000
+HOST=0.0.0.0
+```
+
+#### Frontend Configuration
+Create `.env` file in the `frontend` directory:
+```env
+# Backend API URL
+VITE_API_URL=http://localhost:8000
 ```
 
 ### Running the Application
@@ -111,14 +128,67 @@ ASSEMBLYAI_API_KEY=your_api_key_here
 # Terminal 1: Start Backend
 cd backend
 source venv/bin/activate
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+python start.py
+# Or alternatively: uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2: Start Frontend
 cd frontend
 npm run dev
 ```
 
-Visit `http://localhost:3001` to use the application.
+Visit `http://localhost:3000` to use the application.
+
+## 🌐 Deployment Configuration
+
+### Environment Variables for Different Deployments
+
+#### Local Development
+```env
+# Backend (.env)
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=http://localhost:3000
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend (.env)
+VITE_API_URL=http://localhost:8000
+```
+
+#### Production with Railway + Vercel
+```env
+# Backend (.env) - Railway
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=https://your-frontend.vercel.app
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend (.env) - Vercel
+VITE_API_URL=https://your-backend.railway.app
+```
+
+#### Cloudflare Tunnel
+```env
+# Backend (.env)
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=https://your-tunnel.trycloudflare.com
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend (.env)
+VITE_API_URL=https://your-tunnel.trycloudflare.com
+```
+
+#### Custom Domain
+```env
+# Backend (.env)
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend (.env)
+VITE_API_URL=https://api.yourdomain.com
+```
 
 ### 🎮 Using the Application
 

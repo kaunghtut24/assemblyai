@@ -103,24 +103,52 @@ This guide covers deploying the AssemblyAI Transcriber App to various platforms.
 
 ## 🔗 Connecting Frontend to Backend
 
-Update the API base URL in your frontend:
+The application now uses environment variables for dynamic URL configuration. No code changes needed!
 
+### Automatic Configuration
+The frontend automatically uses the `VITE_API_URL` environment variable:
 ```javascript
-// In frontend/src/components/FileUpload.jsx
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-url.railway.app'
-  : 'http://localhost:8000';
+// Automatically configured via frontend/src/config/api.js
+// No manual URL updates required!
 ```
 
 ## 🔒 Environment Variables
 
-### Backend
+### Backend Environment Variables
 - `ASSEMBLYAI_API_KEY`: Your AssemblyAI API key (required)
-- `CORS_ORIGINS`: Comma-separated allowed origins for production
+- `CORS_ORIGINS`: Comma-separated allowed origins (e.g., `https://yourapp.vercel.app,https://yourdomain.com`)
+- `PORT`: Server port (default: 8000)
+- `HOST`: Server host (default: 0.0.0.0)
 - `LOG_LEVEL`: Logging level (INFO, DEBUG, WARNING, ERROR)
 
-### Frontend
-- `VITE_API_URL`: Backend API URL for production builds
+### Frontend Environment Variables
+- `VITE_API_URL`: Backend API URL (e.g., `https://your-backend.railway.app`)
+
+### Example Configurations
+
+#### Railway + Vercel Deployment
+```env
+# Backend (Railway)
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=https://your-frontend.vercel.app
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend (Vercel)
+VITE_API_URL=https://your-backend.railway.app
+```
+
+#### Cloudflare Tunnel
+```env
+# Backend
+ASSEMBLYAI_API_KEY=your_api_key_here
+CORS_ORIGINS=https://your-tunnel.trycloudflare.com
+PORT=8000
+HOST=0.0.0.0
+
+# Frontend
+VITE_API_URL=https://your-tunnel.trycloudflare.com
+```
 
 ## 🔍 Health Checks
 

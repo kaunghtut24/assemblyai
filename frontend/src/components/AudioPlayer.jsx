@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { buildAudioUrl } from '../config/api';
 
 export default function AudioPlayer({ audioFile, transcript, onWordHighlight }) {
   const { isDark } = useTheme();
@@ -23,7 +24,7 @@ export default function AudioPlayer({ audioFile, transcript, onWordHighlight }) 
 
     // If audioFile has file_info (from backend response), use the file_id
     if (audioFile.file_info?.file_id) {
-      return `http://localhost:8000/audio/${audioFile.file_info.file_id}`;
+      return buildAudioUrl(audioFile.file_info.file_id);
     }
 
     return null;

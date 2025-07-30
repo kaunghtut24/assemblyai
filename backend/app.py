@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -10,8 +10,12 @@ import time
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Optional imports with fallbacks
 try:
@@ -33,6 +37,28 @@ transcriber_instance = None
 # Create uploads directory
 UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
+
+def get_cors_origins() -> List[str]:
+    """Get CORS origins from environment variable with fallback"""
+    cors_origins = os.getenv("CORS_ORIGINS", "")
+
+    if cors_origins:
+        # Split by comma and strip whitespace
+        origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+        logger.info(f"Using CORS origins from environment: {origins}")
+        return origins
+
+    # Fallback for development
+    fallback_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    logger.warning(f"CORS_ORIGINS not set, using fallback: {fallback_origins}")
+    return fallback_origins
+
+def get_server_config() -> Dict[str, Any]:
+    """Get server configuration from environment variables"""
+    return {
+        "host": os.getenv("HOST", "0.0.0.0"),
+        "port": int(os.getenv("PORT", 8000))
+    }
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,10 +89,13 @@ app = FastAPI(
 
 # Add middleware for performance and compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Configure CORS with environment-based origins
+cors_origins = get_cors_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=True,
 )
@@ -111,19 +140,19 @@ async def cleanup_temp_file(file_path: str):
 async def transcribe_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    speech_model: str = "slam-1",
-    language_code: str = None,
-    enable_caching: bool = True,
-    speaker_labels: bool = False,
-    speakers_expected: int = None,
-    min_speakers_expected: int = None,
-    max_speakers_expected: int = None
+    speech_model: str = Form("universal"),
+    language_code: str = Form(None),
+    enable_caching: bool = Form(True),
+    speaker_labels: bool = Form(False),
+    speakers_expected: int = Form(None),
+    min_speakers_expected: int = Form(None),
+    max_speakers_expected: int = Form(None)
 ):
     """
     Transcribe audio file with optimized performance and speaker diarization
 
     - **file**: Audio file to transcribe (supports various formats)
-    - **speech_model**: AssemblyAI speech model to use (default: slam-1)
+    - **speech_model**: AssemblyAI speech model to use (default: universal)
     - **language_code**: Language code for transcription (optional)
     - **enable_caching**: Whether to enable result caching (default: true)
     - **speaker_labels**: Enable speaker diarization (default: false)
@@ -138,6 +167,14 @@ async def transcribe_audio(
         # Validate file
         if not file.filename:
             raise TranscriptionError("No file provided", 400)
+
+        # Validate speech model
+        supported_models = ["universal", "slam-1"]
+        if speech_model not in supported_models:
+            raise TranscriptionError(
+                f"Unsupported speech model: {speech_model}. Supported models: {', '.join(supported_models)}",
+                400
+            )
 
         # Check file size (limit to 500MB)
         max_size = 500 * 1024 * 1024  # 500MB

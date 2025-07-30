@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useTheme } from '../contexts/ThemeContext';
-import SpeakerSettings from './SpeakerSettings';
+import { buildApiUrl } from '../config/api';
 
 // Performance monitoring utility
 class TranscriptionRUM {
@@ -48,7 +48,15 @@ class TranscriptionRUM {
 
 const rum = new TranscriptionRUM();
 
-export default function FileUpload({ onTranscribe, onFileSelect }) {
+export default function FileUpload({
+  onTranscribe,
+  onFileSelect,
+  speechModel = "universal",
+  speakerLabels = false,
+  speakersExpected = null,
+  minSpeakersExpected = null,
+  maxSpeakersExpected = null
+}) {
   const { isDark } = useTheme();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -56,12 +64,6 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const abortControllerRef = useRef(null);
-
-  // Speaker diarization settings
-  const [speakerLabels, setSpeakerLabels] = useState(false);
-  const [speakersExpected, setSpeakersExpected] = useState(null);
-  const [minSpeakersExpected, setMinSpeakersExpected] = useState(null);
-  const [maxSpeakersExpected, setMaxSpeakersExpected] = useState(null);
 
   // File validation
   const validateFile = useCallback((file) => {
@@ -101,6 +103,9 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
         const formData = new FormData();
         formData.append("file", file);
 
+        // Add speech model parameter
+        formData.append("speech_model", speechModel);
+
         // Add speaker diarization parameters
         if (speakerLabels) {
           formData.append("speaker_labels", "true");
@@ -116,7 +121,7 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
         }
 
         // Enhanced fetch with progress tracking
-        const response = await fetch("http://localhost:8000/transcribe", {
+        const response = await fetch(buildApiUrl("/transcribe"), {
           method: "POST",
           body: formData,
           signal: abortControllerRef.current.signal,
@@ -352,20 +357,6 @@ export default function FileUpload({ onTranscribe, onFileSelect }) {
           )}
         </div>
       </div>
-
-      {/* Speaker Settings */}
-      {file && !loading && (
-        <SpeakerSettings
-          speakerLabels={speakerLabels}
-          setSpeakerLabels={setSpeakerLabels}
-          speakersExpected={speakersExpected}
-          setSpeakersExpected={setSpeakersExpected}
-          minSpeakersExpected={minSpeakersExpected}
-          setMinSpeakersExpected={setMinSpeakersExpected}
-          maxSpeakersExpected={maxSpeakersExpected}
-          setMaxSpeakersExpected={setMaxSpeakersExpected}
-        />
-      )}
     </div>
   );
 }

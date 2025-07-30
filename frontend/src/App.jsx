@@ -3,7 +3,10 @@ import TranscriptDisplay from "./components/TranscriptDisplay";
 import PerformanceMonitor from "./components/PerformanceMonitor";
 import AudioPlayer from "./components/AudioPlayer";
 import ThemeToggle from "./components/ThemeToggle";
+import SpeakerSettings from "./components/SpeakerSettings";
+import ModelSelection from "./components/ModelSelection";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { buildApiUrl } from "./config/api";
 import { useState, useCallback, useEffect } from "react";
 
 function AppContent() {
@@ -14,11 +17,20 @@ function AppContent() {
   const [audioFile, setAudioFile] = useState(null);
   const [highlightedWordIndex, setHighlightedWordIndex] = useState(-1);
 
+  // Speaker diarization settings
+  const [speakerLabels, setSpeakerLabels] = useState(false);
+  const [speakersExpected, setSpeakersExpected] = useState(null);
+  const [minSpeakersExpected, setMinSpeakersExpected] = useState(null);
+  const [maxSpeakersExpected, setMaxSpeakersExpected] = useState(null);
+
+  // Model selection
+  const [speechModel, setSpeechModel] = useState("universal");
+
   // Check API health on mount
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
-        const response = await fetch("http://localhost:8000/health");
+        const response = await fetch(buildApiUrl("/health"));
         const data = await response.json();
         setApiHealth(data);
       } catch (error) {
@@ -117,7 +129,34 @@ function AppContent() {
               <FileUpload
                 onTranscribe={handleTranscribe}
                 onFileSelect={setAudioFile}
+                speechModel={speechModel}
+                speakerLabels={speakerLabels}
+                speakersExpected={speakersExpected}
+                minSpeakersExpected={minSpeakersExpected}
+                maxSpeakersExpected={maxSpeakersExpected}
               />
+
+              {/* Model Selection */}
+              <div className="mt-6">
+                <ModelSelection
+                  speechModel={speechModel}
+                  setSpeechModel={setSpeechModel}
+                />
+              </div>
+
+              {/* Speaker Settings */}
+              <div className="mt-6">
+                <SpeakerSettings
+                  speakerLabels={speakerLabels}
+                  setSpeakerLabels={setSpeakerLabels}
+                  speakersExpected={speakersExpected}
+                  setSpeakersExpected={setSpeakersExpected}
+                  minSpeakersExpected={minSpeakersExpected}
+                  setMinSpeakersExpected={setMinSpeakersExpected}
+                  maxSpeakersExpected={maxSpeakersExpected}
+                  setMaxSpeakersExpected={setMaxSpeakersExpected}
+                />
+              </div>
 
               {transcript && (
                 <div className={`mt-4 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>

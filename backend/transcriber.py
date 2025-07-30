@@ -163,7 +163,7 @@ class OptimizedTranscriber:
     async def transcribe_with_local_file(
         self,
         file_path: str,
-        speech_model: str = "slam-1",
+        speech_model: str = "universal",
         language_code: Optional[str] = None,
         enable_caching: bool = True,
         speaker_labels: bool = False,

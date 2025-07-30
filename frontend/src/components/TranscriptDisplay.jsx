@@ -5,6 +5,7 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
   const { isDark } = useTheme();
   const [copied, setCopied] = useState(false);
   const [showWords, setShowWords] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Copy to clipboard functionality
   const copyToClipboard = useCallback(async () => {
@@ -55,6 +56,14 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
   const formatFileSize = (sizeMB) => {
     if (!sizeMB) return 'N/A';
     return `${sizeMB.toFixed(2)} MB`;
+  };
+
+  // Get preview text (first 200 characters)
+  const getPreviewText = () => {
+    if (!result.text) return 'No transcription text available';
+    const text = result.text.trim();
+    if (text.length <= 200) return text;
+    return text.substring(0, 200) + '...';
   };
 
   // Render transcript with speaker diarization
@@ -286,9 +295,23 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
     `}>
       {/* Header with actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <h2 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Transcript Results
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Transcript Results
+          </h2>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`
+              px-2 py-1 text-xs rounded-md transition-colors touch-manipulation
+              ${isDark
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              }
+            `}
+          >
+            {isExpanded ? '📄 Collapse' : '📖 Expand'}
+          </button>
+        </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={copyToClipboard}
@@ -350,15 +373,16 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
 
       {/* Main transcript text */}
       <div className={`
-        border rounded-lg p-4 sm:p-6 min-h-[200px] mobile-scroll
+        border rounded-lg p-4 sm:p-6 mobile-scroll
         ${isDark
           ? 'bg-gray-800 border-gray-700'
           : 'bg-white border-gray-200'
         }
+        ${!isExpanded ? 'min-h-[120px]' : 'min-h-[200px]'}
       `}>
         <div className="prose max-w-none text-sm sm:text-base">
           {/* Debug info for development */}
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === 'development' && isExpanded && (
             <details className={`mb-4 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               <summary className="cursor-pointer">Debug Info</summary>
               <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">
@@ -375,23 +399,43 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
           )}
 
           {/* Render appropriate transcript format */}
-          {(() => {
-            // Check if speaker diarization is enabled and we have utterances
-            const hasSpeakerData = result.speaker_labels_enabled &&
-                                 result.utterances &&
-                                 result.utterances.length > 0;
+          {isExpanded ? (
+            (() => {
+              // Check if speaker diarization is enabled and we have utterances
+              const hasSpeakerData = result.speaker_labels_enabled &&
+                                   result.utterances &&
+                                   result.utterances.length > 0;
 
-            if (hasSpeakerData) {
-              return renderSpeakerTranscript();
-            } else {
-              return renderTranscriptText();
-            }
-          })()}
+              if (hasSpeakerData) {
+                return renderSpeakerTranscript();
+              } else {
+                return renderTranscriptText();
+              }
+            })()
+          ) : (
+            // Show preview when collapsed
+            <div className="space-y-3">
+              <div className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                📝 Preview (click "Expand" to see full transcript)
+              </div>
+              <div className={`
+                p-3 rounded-lg leading-relaxed
+                ${isDark ? 'bg-gray-700/50 text-gray-100' : 'bg-gray-50 text-gray-900'}
+              `}>
+                <p className="whitespace-pre-wrap">
+                  {getPreviewText()}
+                </p>
+              </div>
+              <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                💡 Click "Expand" above to see the full transcript with interactive features
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Word-level details toggle */}
-      {result.words && result.words.length > 0 && (
+      {/* Word-level details toggle - only show when expanded */}
+      {isExpanded && result.words && result.words.length > 0 && (
         <div className="space-y-2">
           <button
             onClick={() => setShowWords(!showWords)}

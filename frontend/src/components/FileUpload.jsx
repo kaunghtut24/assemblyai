@@ -60,12 +60,10 @@ export default function FileUpload({
   const { isDark } = useTheme();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const [transcriptId, setTranscriptId] = useState(null);
+  const [estimatedTime, setEstimatedTime] = useState(null);
   const abortControllerRef = useRef(null);
-  const progressIntervalRef = useRef(null);
 
   // File validation
   const validateFile = useCallback((file) => {
@@ -86,44 +84,31 @@ export default function FileUpload({
     return true;
   }, []);
 
-  // Poll for transcription progress
-  const pollProgress = useCallback(async (transcriptId) => {
-    try {
-      const response = await fetch(buildApiUrl(`/progress/${transcriptId}`));
-      if (response.ok) {
-        const data = await response.json();
-        setProgress(data.progress);
+  // Estimate transcription time based on file size
+  const estimateTranscriptionTime = useCallback((file) => {
+    if (!file) return null;
 
-        // Stop polling when complete
-        if (data.progress >= 100) {
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current);
-            progressIntervalRef.current = null;
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Progress polling failed:', error);
+    // Rough estimation: 1MB ≈ 1 minute of audio, transcription takes ~10-30% of audio duration
+    const fileSizeMB = file.size / (1024 * 1024);
+    const estimatedAudioMinutes = fileSizeMB; // Very rough approximation
+    const transcriptionMinutes = Math.max(0.5, estimatedAudioMinutes * 0.2); // 20% of audio duration, minimum 30 seconds
+
+    if (transcriptionMinutes < 1) {
+      return `~${Math.round(transcriptionMinutes * 60)} seconds`;
+    } else if (transcriptionMinutes < 60) {
+      return `~${Math.round(transcriptionMinutes)} minute${transcriptionMinutes > 1 ? 's' : ''}`;
+    } else {
+      const hours = Math.floor(transcriptionMinutes / 60);
+      const minutes = Math.round(transcriptionMinutes % 60);
+      return `~${hours}h ${minutes}m`;
     }
   }, []);
 
-  // Start progress polling
-  const startProgressPolling = useCallback((transcriptId) => {
-    setTranscriptId(transcriptId);
-    setProgress(10); // Initial progress
-
-    // Poll every 2 seconds
-    progressIntervalRef.current = setInterval(() => {
-      pollProgress(transcriptId);
-    }, 2000);
-  }, [pollProgress]);
-
-  // Enhanced upload with progress tracking and error handling
+  // Upload and transcription
   const uploadAndTranscribe = useCallback(async () => {
     if (!file) return;
 
     setLoading(true);
-    setProgress(0);
     setError(null);
 
     try {
@@ -154,7 +139,7 @@ export default function FileUpload({
           }
         }
 
-        // Enhanced fetch with progress tracking
+        // Perform transcription request
         const response = await fetch(buildApiUrl("/transcribe"), {
           method: "POST",
           body: formData,
@@ -170,13 +155,6 @@ export default function FileUpload({
         }
 
         const data = await response.json();
-
-        // Start progress polling if transcript_id is available
-        if (data.transcript_id || data.id) {
-          const transcriptId = data.transcript_id || data.id;
-          startProgressPolling(transcriptId);
-        }
-
         return data;
       };
 
@@ -187,23 +165,13 @@ export default function FileUpload({
         fileType: file.type
       });
 
-      // Clear any remaining progress polling
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-
-      setProgress(100);
+      // Complete transcription
+      console.log('Transcription result received:', result);
+      setLoading(false);
       onTranscribe(result);
       onFileSelect?.(file); // Pass the audio file for playback
 
     } catch (err) {
-      // Clear progress polling on error
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-
       if (err.name === 'AbortError') {
         setError('Transcription cancelled');
       } else {
@@ -214,31 +182,14 @@ export default function FileUpload({
       setLoading(false);
       abortControllerRef.current = null;
     }
-  }, [file, onTranscribe, validateFile]);
+  }, [file, onTranscribe, onFileSelect, validateFile, speechModel, speakerLabels, speakersExpected, minSpeakersExpected, maxSpeakersExpected]);
 
   // Cancel transcription
   const cancelTranscription = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-
-    // Clear progress polling
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-
-    setProgress(0);
-    setTranscriptId(null);
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
+    setLoading(false);
   }, []);
 
   // Drag and drop handlers
@@ -261,12 +212,13 @@ export default function FileUpload({
       try {
         validateFile(droppedFile);
         setFile(droppedFile);
+        setEstimatedTime(estimateTranscriptionTime(droppedFile));
         setError(null);
       } catch (err) {
         setError(err.message);
       }
     }
-  }, [validateFile]);
+  }, [validateFile, estimateTranscriptionTime]);
 
   const handleFileChange = useCallback((e) => {
     const selectedFile = e.target.files[0];
@@ -274,13 +226,15 @@ export default function FileUpload({
       try {
         validateFile(selectedFile);
         setFile(selectedFile);
+        setEstimatedTime(estimateTranscriptionTime(selectedFile));
         setError(null);
       } catch (err) {
         setError(err.message);
         setFile(null);
+        setEstimatedTime(null);
       }
     }
-  }, [validateFile]);
+  }, [validateFile, estimateTranscriptionTime]);
 
   return (
     <div className="space-y-4">
@@ -357,17 +311,38 @@ export default function FileUpload({
         </div>
       )}
 
-      {/* Progress Bar */}
+      {/* Estimated Time Display */}
+      {file && estimatedTime && !loading && (
+        <div className={`
+          border rounded-lg p-3 text-center
+          ${isDark
+            ? 'bg-blue-900/20 border-blue-800 text-blue-300'
+            : 'bg-blue-50 border-blue-200 text-blue-700'
+          }
+        `}>
+          <p className="text-sm">
+            ⏱️ Estimated transcription time: <span className="font-medium">{estimatedTime}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Working Animation */}
       {loading && (
-        <div className="space-y-2">
-          <div className={`rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <div className="flex space-x-1">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`} style={{animationDelay: '0ms'}}></div>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`} style={{animationDelay: '150ms'}}></div>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`} style={{animationDelay: '300ms'}}></div>
+            </div>
           </div>
           <p className={`text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-            Transcribing... {progress}%
+            🎯 Transcribing your audio...
+            {estimatedTime && (
+              <span className="block text-xs mt-1 opacity-75">
+                Estimated time: {estimatedTime}
+              </span>
+            )}
           </p>
         </div>
       )}
@@ -413,7 +388,7 @@ export default function FileUpload({
               onClick={() => {
                 setFile(null);
                 setError(null);
-                setProgress(0);
+                setEstimatedTime(null);
               }}
               className={`
                 px-4 py-3 sm:py-2 border rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0

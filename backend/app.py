@@ -136,6 +136,8 @@ async def cleanup_temp_file(file_path: str):
     except Exception as e:
         logger.warning("Failed to cleanup temp file", file_path=file_path, error=str(e))
 
+
+
 @app.post("/transcribe")
 async def transcribe_audio(
     background_tasks: BackgroundTasks,
@@ -226,10 +228,11 @@ async def transcribe_audio(
                    filename=file.filename,
                    size_mb=file_size / (1024*1024))
 
-        # Transcribe using available transcriber
+        # Perform transcription directly and return result
         if hasattr(transcriber_instance, 'transcribe_with_local_file') and callable(getattr(transcriber_instance, 'transcribe_with_local_file')):
             # Check if it's the optimized version (async)
             if isinstance(transcriber_instance, OptimizedTranscriber):
+                # Perform transcription directly
                 result = await transcriber_instance.transcribe_with_local_file(
                     temp_file_path,
                     speech_model=speech_model,
@@ -240,35 +243,52 @@ async def transcribe_audio(
                     min_speakers_expected=min_speakers_expected,
                     max_speakers_expected=max_speakers_expected
                 )
+
+                # Add performance metrics and file information to response
+                processing_time = time.time() - start_time
+                result["processing_time"] = processing_time
+                result["file_size_mb"] = file_size / (1024*1024)
+                result["file_info"] = {
+                    "original_filename": file.filename,
+                    "saved_filename": saved_filename,
+                    "file_id": file_id,
+                    "file_path": str(saved_file_path),
+                    "content_type": file.content_type,
+                    "size_bytes": file_size
+                }
+
+                # Schedule cleanup of temp file (keep saved file)
+                background_tasks.add_task(cleanup_temp_file, temp_file_path)
+
+                logger.info("Transcription completed successfully",
+                           filename=file.filename,
+                           processing_time=processing_time,
+                           text_length=len(result.get("text", "")))
+
+                return result
             else:
-                # Basic transcriber (sync)
+                # Basic transcriber (sync) - fallback to old behavior
                 result = transcriber_instance.transcribe_with_local_file(temp_file_path)
+
+                # Add performance metrics and file information to response
+                processing_time = time.time() - start_time
+                result["processing_time"] = processing_time
+                result["file_size_mb"] = file_size / (1024*1024)
+                result["file_info"] = {
+                    "original_filename": file.filename,
+                    "saved_filename": saved_filename,
+                    "file_id": file_id,
+                    "file_path": str(saved_file_path),
+                    "content_type": file.content_type,
+                    "size_bytes": file_size
+                }
+
+                # Schedule cleanup of temp file (keep saved file)
+                background_tasks.add_task(cleanup_temp_file, temp_file_path)
+
+                return result
         else:
             raise TranscriptionError("Transcriber not properly initialized", 500)
-
-        # Add performance metrics and file information to response
-        processing_time = time.time() - start_time
-        result["processing_time"] = processing_time
-        result["file_size_mb"] = file_size / (1024*1024)
-        result["file_info"] = {
-            "original_filename": file.filename,
-            "saved_filename": saved_filename,
-            "file_id": file_id,
-            "file_path": str(saved_file_path),
-            "content_type": file.content_type,
-            "size_bytes": file_size
-        }
-
-        # Schedule cleanup of temp file (keep saved file)
-        background_tasks.add_task(cleanup_temp_file, temp_file_path)
-
-        logger.info("Transcription completed successfully",
-                   filename=file.filename,
-                   file_id=file_id,
-                   processing_time=processing_time,
-                   text_length=len(result.get("text", "")))
-
-        return result
 
     except TranscriptionError:
         # Clean up temp file immediately on error
@@ -309,29 +329,7 @@ async def get_audio_file(file_id: str):
         logger.error("Error serving audio file", file_id=file_id, error=str(e))
         raise HTTPException(status_code=500, detail="Error serving audio file")
 
-@app.get("/progress/{transcript_id}")
-async def get_transcription_progress(transcript_id: str):
-    """Get transcription progress by transcript ID"""
-    try:
-        if not transcriber_instance:
-            raise HTTPException(status_code=500, detail="Transcriber not initialized")
 
-        if hasattr(transcriber_instance, 'get_transcript_progress'):
-            progress_data = transcriber_instance.get_transcript_progress(transcript_id)
-            return {
-                "transcript_id": transcript_id,
-                "progress": progress_data.get('progress', 0),
-                "timestamp": progress_data.get('timestamp', time.time()),
-                "status": "tracking"
-            }
-        else:
-            raise HTTPException(status_code=404, detail="Progress tracking not available")
-
-    except Exception as e:
-        logger.error("Error getting transcription progress",
-                    transcript_id=transcript_id,
-                    error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error getting progress: {str(e)}")
 
 @app.get("/metrics")
 async def get_metrics():

@@ -5,28 +5,54 @@
 
 set -e  # Exit on any error
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors for output - check if terminal supports colors
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1 && tput colors >/dev/null 2>&1 && [[ $(tput colors) -ge 8 ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+    USE_COLORS=true
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+    USE_COLORS=false
+fi
 
 # Function to print colored output
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    if [[ "$USE_COLORS" == "true" ]]; then
+        echo -e "${BLUE}[INFO]${NC} $1"
+    else
+        echo "[INFO] $1"
+    fi
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    if [[ "$USE_COLORS" == "true" ]]; then
+        echo -e "${GREEN}[SUCCESS]${NC} $1"
+    else
+        echo "[SUCCESS] $1"
+    fi
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    if [[ "$USE_COLORS" == "true" ]]; then
+        echo -e "${YELLOW}[WARNING]${NC} $1"
+    else
+        echo "[WARNING] $1"
+    fi
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    if [[ "$USE_COLORS" == "true" ]]; then
+        echo -e "${RED}[ERROR]${NC} $1"
+    else
+        echo "[ERROR] $1"
+    fi
 }
 
 # Function to check if a command exists
@@ -99,9 +125,25 @@ if [ ! -f "frontend/.env" ]; then
     exit 1
 fi
 
+# Read ports from environment files
+BACKEND_PORT=8000
+FRONTEND_PORT=3001
+
+# Read backend port from .env if available
+if [ -f "backend/.env" ]; then
+    BACKEND_PORT=$(grep "^PORT=" backend/.env | cut -d'=' -f2 | tr -d ' ' || echo "8000")
+fi
+
+# Read frontend port from .env if available
+if [ -f "frontend/.env" ]; then
+    FRONTEND_PORT=$(grep "^VITE_PORT=" frontend/.env | cut -d'=' -f2 | tr -d ' ' || echo "3001")
+fi
+
+print_status "Using ports: Backend=$BACKEND_PORT, Frontend=$FRONTEND_PORT"
+
 # Free up ports if they're in use
-kill_port 8000
-kill_port 3001
+kill_port $BACKEND_PORT
+kill_port $FRONTEND_PORT
 
 # Start Backend Server
 print_status "Starting backend server..."
@@ -132,8 +174,8 @@ BACKEND_PID=$!
 sleep 3
 
 # Check if backend started successfully
-if ! port_in_use 8000; then
-    print_error "Backend server failed to start on port 8000"
+if ! port_in_use $BACKEND_PORT; then
+    print_error "Backend server failed to start on port $BACKEND_PORT"
     exit 1
 fi
 
@@ -158,8 +200,8 @@ FRONTEND_PID=$!
 sleep 5
 
 # Check if frontend started successfully
-if ! port_in_use 3001; then
-    print_error "Frontend server failed to start on port 3001"
+if ! port_in_use $FRONTEND_PORT; then
+    print_error "Frontend server failed to start on port $FRONTEND_PORT"
     cleanup
     exit 1
 fi
@@ -170,10 +212,10 @@ print_success "Frontend server started successfully"
 echo ""
 echo "🚀 Audio Transcriber App is now running!"
 echo "========================================"
-echo "📱 Frontend: http://localhost:3001"
-echo "🔧 Backend:  http://localhost:8000"
-echo "📊 API Docs: http://localhost:8000/docs"
-echo "💡 Health:   http://localhost:8000/health"
+echo "📱 Frontend: http://localhost:$FRONTEND_PORT"
+echo "🔧 Backend:  http://localhost:$BACKEND_PORT"
+echo "📊 API Docs: http://localhost:$BACKEND_PORT/docs"
+echo "💡 Health:   http://localhost:$BACKEND_PORT/health"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 echo ""

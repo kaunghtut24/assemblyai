@@ -44,13 +44,14 @@ function AppContent() {
 
   // Handle new transcription
   const handleTranscribe = useCallback((result) => {
+    console.log('handleTranscribe called with:', result);
     setTranscript(result);
 
     // Add to history
     const historyItem = {
-      id: result.id || Date.now(),
+      id: `${result.id || result.transcript_id || Date.now()}-${Date.now()}`, // Ensure unique key
       timestamp: new Date().toISOString(),
-      text: result.text,
+      text: result.text || 'No transcript text available',
       confidence: result.confidence,
       processing_time: result.processing_time,
       file_size_mb: result.file_size_mb
@@ -239,7 +240,7 @@ function AppContent() {
                         {new Date(item.timestamp).toLocaleString()}
                       </div>
                       <div className={`text-sm line-clamp-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                        {item.text.substring(0, 100)}...
+                        {item.text ? `${item.text.substring(0, 100)}...` : 'No transcript text available'}
                       </div>
                       <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         Confidence: {item.confidence ? `${(item.confidence * 100).toFixed(1)}%` : 'N/A'}

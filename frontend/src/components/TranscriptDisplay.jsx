@@ -60,77 +60,103 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
   // Render transcript with speaker diarization
   const renderSpeakerTranscript = () => {
     if (!result.utterances || result.utterances.length === 0) {
+      // Fallback to regular transcript if no utterances
       return renderTranscriptText();
     }
 
+    // Sort utterances by start time to ensure proper order
+    const sortedUtterances = [...result.utterances].sort((a, b) => a.start - b.start);
+
     return (
       <div className="space-y-4">
-        {result.utterances.map((utterance, utteranceIndex) => (
-          <div
-            key={utteranceIndex}
-            className={`
-              border-l-4 pl-4 py-2 rounded-r-lg
-              ${isDark
-                ? 'border-blue-500 bg-gray-800/50'
-                : 'border-blue-500 bg-blue-50/50'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`
-                inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                ${isDark
-                  ? 'bg-blue-600 text-blue-100'
-                  : 'bg-blue-100 text-blue-800'
-                }
-              `}>
-                Speaker {utterance.speaker}
-              </span>
-              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {formatTime(utterance.start / 1000)} - {formatTime(utterance.end / 1000)}
-              </span>
-              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {formatConfidence(utterance.confidence)}
-              </span>
-            </div>
+        <div className={`text-sm font-medium mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Speaker Diarization Enabled - {sortedUtterances.length} speaker segments detected
+        </div>
 
-            <div className="leading-relaxed">
-              {utterance.words && utterance.words.length > 0 ? (
-                utterance.words.map((word, wordIndex) => {
-                  // Find global word index for highlighting
-                  const globalWordIndex = result.words ?
-                    result.words.findIndex(w => w.start === word.start && w.text === word.text) : -1;
+        {sortedUtterances.map((utterance, utteranceIndex) => {
+          // Get speaker color for consistency
+          const speakerColors = [
+            { bg: isDark ? 'bg-blue-600' : 'bg-blue-100', text: isDark ? 'text-blue-100' : 'text-blue-800', border: 'border-blue-500' },
+            { bg: isDark ? 'bg-green-600' : 'bg-green-100', text: isDark ? 'text-green-100' : 'text-green-800', border: 'border-green-500' },
+            { bg: isDark ? 'bg-purple-600' : 'bg-purple-100', text: isDark ? 'text-purple-100' : 'text-purple-800', border: 'border-purple-500' },
+            { bg: isDark ? 'bg-orange-600' : 'bg-orange-100', text: isDark ? 'text-orange-100' : 'text-orange-800', border: 'border-orange-500' },
+            { bg: isDark ? 'bg-pink-600' : 'bg-pink-100', text: isDark ? 'text-pink-100' : 'text-pink-800', border: 'border-pink-500' },
+          ];
 
-                  return (
-                    <span
-                      key={wordIndex}
-                      className={`
-                        transition-all duration-200 cursor-pointer
-                        ${globalWordIndex === highlightedWordIndex
-                          ? isDark
-                            ? 'bg-blue-600 text-white shadow-lg'
-                            : 'bg-blue-500 text-white shadow-lg'
-                          : isDark
-                            ? 'text-gray-100 hover:bg-gray-700'
-                            : 'text-gray-900 hover:bg-gray-100'
-                        }
-                        ${globalWordIndex === highlightedWordIndex ? 'px-1 rounded' : ''}
-                      `}
-                      title={`${word.start}ms - ${word.end}ms (${formatConfidence(word.confidence)})`}
-                    >
-                      {word.text}
-                      {wordIndex < utterance.words.length - 1 ? ' ' : ''}
-                    </span>
-                  );
-                })
-              ) : (
-                <p className={`${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                  {utterance.text}
-                </p>
-              )}
+          const speakerIndex = (utterance.speaker && typeof utterance.speaker === 'string')
+            ? parseInt(utterance.speaker.replace(/\D/g, '')) || 0
+            : utterance.speaker || 0;
+          const colorScheme = speakerColors[speakerIndex % speakerColors.length];
+
+          return (
+            <div
+              key={utteranceIndex}
+              className={`
+                border-l-4 pl-4 py-3 rounded-r-lg transition-all duration-200
+                ${colorScheme.border} ${isDark ? 'bg-gray-800/50' : 'bg-gray-50/50'}
+                hover:${isDark ? 'bg-gray-800/70' : 'bg-gray-50/70'}
+              `}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className={`
+                  inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                  ${colorScheme.bg} ${colorScheme.text}
+                `}>
+                  🎤 Speaker {utterance.speaker || 'Unknown'}
+                </span>
+                <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {formatTime(utterance.start / 1000)} → {formatTime(utterance.end / 1000)}
+                </span>
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Confidence: {formatConfidence(utterance.confidence)}
+                </span>
+                <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  ({Math.round((utterance.end - utterance.start) / 1000)}s)
+                </span>
+              </div>
+
+              <div className="leading-relaxed text-base">
+                {utterance.words && utterance.words.length > 0 ? (
+                  utterance.words.map((word, wordIndex) => {
+                    // Find global word index for highlighting
+                    const globalWordIndex = result.words ?
+                      result.words.findIndex(w => w.start === word.start && w.text === word.text) : -1;
+
+                    return (
+                      <span
+                        key={wordIndex}
+                        className={`
+                          transition-all duration-200 cursor-pointer
+                          ${globalWordIndex === highlightedWordIndex
+                            ? isDark
+                              ? 'bg-yellow-600 text-black shadow-lg'
+                              : 'bg-yellow-300 text-black shadow-lg'
+                            : isDark
+                              ? 'text-gray-100 hover:bg-gray-700'
+                              : 'text-gray-900 hover:bg-gray-100'
+                          }
+                          ${globalWordIndex === highlightedWordIndex ? 'px-1 rounded' : ''}
+                        `}
+                        title={`${word.start}ms - ${word.end}ms (${formatConfidence(word.confidence)})`}
+                      >
+                        {word.text}
+                        {wordIndex < utterance.words.length - 1 ? ' ' : ''}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <p className={`${isDark ? 'text-gray-100' : 'text-gray-900'} whitespace-pre-wrap`}>
+                    {utterance.text || 'No text available for this segment'}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+
+        <div className={`text-xs mt-4 pt-3 border-t ${isDark ? 'text-gray-500 border-gray-700' : 'text-gray-500 border-gray-200'}`}>
+          💡 Tip: Hover over words to see timing and confidence information
+        </div>
       </div>
     );
   };
@@ -145,36 +171,110 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
   // Render transcript with word highlighting
   const renderTranscriptText = () => {
     if (!result.words || result.words.length === 0) {
+      // Fallback to plain text if no word-level data
       return (
-        <p className={`leading-relaxed whitespace-pre-wrap ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-          {result.text}
-        </p>
+        <div className="space-y-4">
+          <div className={`text-sm font-medium mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            Standard Transcription - Full text output
+          </div>
+          <div className={`
+            p-4 rounded-lg leading-relaxed text-base
+            ${isDark ? 'bg-gray-800/50 text-gray-100' : 'bg-gray-50/50 text-gray-900'}
+          `}>
+            <p className="whitespace-pre-wrap">
+              {result.text || 'No transcription text available'}
+            </p>
+          </div>
+          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            ℹ️ Word-level timing data not available for this transcription
+          </div>
+        </div>
       );
     }
 
+    // Format text with proper punctuation and capitalization
+    const formatTranscriptText = () => {
+      if (!result.words || result.words.length === 0) return result.text;
+
+      let formattedText = '';
+      let currentSentence = '';
+
+      result.words.forEach((word, index) => {
+        const wordText = word.text || '';
+
+        // Add word to current sentence
+        currentSentence += (currentSentence ? ' ' : '') + wordText;
+
+        // Check if this word ends a sentence
+        const endsWithPunctuation = /[.!?]$/.test(wordText);
+        const isLastWord = index === result.words.length - 1;
+
+        if (endsWithPunctuation || isLastWord) {
+          // Capitalize first letter of sentence
+          if (currentSentence) {
+            const capitalizedSentence = currentSentence.charAt(0).toUpperCase() + currentSentence.slice(1);
+            formattedText += (formattedText ? ' ' : '') + capitalizedSentence;
+            currentSentence = '';
+          }
+        }
+      });
+
+      return formattedText || result.text;
+    };
+
     return (
-      <div className="leading-relaxed">
-        {result.words.map((word, index) => (
-          <span
-            key={index}
-            className={`
-              transition-all duration-200 cursor-pointer
-              ${index === highlightedWordIndex
-                ? isDark
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-blue-500 text-white shadow-lg'
-                : isDark
-                  ? 'text-gray-100 hover:bg-gray-700'
-                  : 'text-gray-900 hover:bg-gray-100'
-              }
-              ${index === highlightedWordIndex ? 'px-1 rounded' : ''}
-            `}
-            title={`${word.start}ms - ${word.end}ms (${formatConfidence(word.confidence)})`}
-          >
-            {word.text}
-            {index < result.words.length - 1 ? ' ' : ''}
-          </span>
-        ))}
+      <div className="space-y-4">
+        <div className={`text-sm font-medium mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Standard Transcription - {result.words.length} words with timing data
+        </div>
+
+        {/* Formatted text view */}
+        <div className={`
+          p-4 rounded-lg mb-4
+          ${isDark ? 'bg-gray-800/50' : 'bg-gray-50/50'}
+        `}>
+          <div className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            📝 Formatted Text:
+          </div>
+          <p className={`leading-relaxed text-base whitespace-pre-wrap ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+            {formatTranscriptText()}
+          </p>
+        </div>
+
+        {/* Interactive word view */}
+        <div className={`
+          p-4 rounded-lg border
+          ${isDark ? 'bg-gray-800/30 border-gray-700' : 'bg-white border-gray-200'}
+        `}>
+          <div className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            🎯 Interactive Words (hover for timing):
+          </div>
+          <div className="leading-relaxed text-base">
+            {result.words.map((word, index) => (
+              <span
+                key={index}
+                className={`
+                  transition-all duration-200 cursor-pointer inline-block mr-1 mb-1 px-1 py-0.5 rounded
+                  ${index === highlightedWordIndex
+                    ? isDark
+                      ? 'bg-yellow-600 text-black shadow-lg scale-105'
+                      : 'bg-yellow-300 text-black shadow-lg scale-105'
+                    : isDark
+                      ? 'text-gray-100 hover:bg-gray-700 hover:shadow-md'
+                      : 'text-gray-900 hover:bg-gray-100 hover:shadow-md'
+                  }
+                `}
+                title={`"${word.text}" | ${formatTime(word.start / 1000)} - ${formatTime(word.end / 1000)} | Confidence: ${formatConfidence(word.confidence)}`}
+              >
+                {word.text}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+          💡 Tip: Hover over words to see detailed timing and confidence information
+        </div>
       </div>
     );
   };
@@ -257,10 +357,36 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
         }
       `}>
         <div className="prose max-w-none text-sm sm:text-base">
-          {result.speaker_labels_enabled && result.utterances && result.utterances.length > 0
-            ? renderSpeakerTranscript()
-            : renderTranscriptText()
-          }
+          {/* Debug info for development */}
+          {process.env.NODE_ENV === 'development' && (
+            <details className={`mb-4 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+              <summary className="cursor-pointer">Debug Info</summary>
+              <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">
+                {JSON.stringify({
+                  speaker_labels_enabled: result.speaker_labels_enabled,
+                  has_utterances: !!(result.utterances && result.utterances.length > 0),
+                  utterances_count: result.utterances?.length || 0,
+                  has_words: !!(result.words && result.words.length > 0),
+                  words_count: result.words?.length || 0,
+                  has_text: !!result.text
+                }, null, 2)}
+              </pre>
+            </details>
+          )}
+
+          {/* Render appropriate transcript format */}
+          {(() => {
+            // Check if speaker diarization is enabled and we have utterances
+            const hasSpeakerData = result.speaker_labels_enabled &&
+                                 result.utterances &&
+                                 result.utterances.length > 0;
+
+            if (hasSpeakerData) {
+              return renderSpeakerTranscript();
+            } else {
+              return renderTranscriptText();
+            }
+          })()}
         </div>
       </div>
 

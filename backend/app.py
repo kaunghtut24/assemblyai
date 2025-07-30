@@ -309,6 +309,30 @@ async def get_audio_file(file_id: str):
         logger.error("Error serving audio file", file_id=file_id, error=str(e))
         raise HTTPException(status_code=500, detail="Error serving audio file")
 
+@app.get("/progress/{transcript_id}")
+async def get_transcription_progress(transcript_id: str):
+    """Get transcription progress by transcript ID"""
+    try:
+        if not transcriber_instance:
+            raise HTTPException(status_code=500, detail="Transcriber not initialized")
+
+        if hasattr(transcriber_instance, 'get_transcript_progress'):
+            progress_data = transcriber_instance.get_transcript_progress(transcript_id)
+            return {
+                "transcript_id": transcript_id,
+                "progress": progress_data.get('progress', 0),
+                "timestamp": progress_data.get('timestamp', time.time()),
+                "status": "tracking"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Progress tracking not available")
+
+    except Exception as e:
+        logger.error("Error getting transcription progress",
+                    transcript_id=transcript_id,
+                    error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error getting progress: {str(e)}")
+
 @app.get("/metrics")
 async def get_metrics():
     """Get service metrics and performance statistics"""
@@ -331,3 +355,15 @@ async def get_metrics():
             "max_connections": getattr(transcriber_instance, 'max_connections', 10)
         }
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    config = get_server_config()
+    logger.info(f"Starting server on {config['host']}:{config['port']}")
+    uvicorn.run(
+        "app:app",
+        host=config["host"],
+        port=config["port"],
+        reload=True,
+        log_level="info"
+    )

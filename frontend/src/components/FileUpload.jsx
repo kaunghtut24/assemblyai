@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useTheme } from '../contexts/ThemeContext';
 import { buildApiUrl } from '../config/api';
 
@@ -63,7 +63,9 @@ export default function FileUpload({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [transcriptId, setTranscriptId] = useState(null);
   const abortControllerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
 
   // File validation
   const validateFile = useCallback((file) => {
@@ -83,6 +85,38 @@ export default function FileUpload({
 
     return true;
   }, []);
+
+  // Poll for transcription progress
+  const pollProgress = useCallback(async (transcriptId) => {
+    try {
+      const response = await fetch(buildApiUrl(`/progress/${transcriptId}`));
+      if (response.ok) {
+        const data = await response.json();
+        setProgress(data.progress);
+
+        // Stop polling when complete
+        if (data.progress >= 100) {
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Progress polling failed:', error);
+    }
+  }, []);
+
+  // Start progress polling
+  const startProgressPolling = useCallback((transcriptId) => {
+    setTranscriptId(transcriptId);
+    setProgress(10); // Initial progress
+
+    // Poll every 2 seconds
+    progressIntervalRef.current = setInterval(() => {
+      pollProgress(transcriptId);
+    }, 2000);
+  }, [pollProgress]);
 
   // Enhanced upload with progress tracking and error handling
   const uploadAndTranscribe = useCallback(async () => {
@@ -136,6 +170,13 @@ export default function FileUpload({
         }
 
         const data = await response.json();
+
+        // Start progress polling if transcript_id is available
+        if (data.transcript_id || data.id) {
+          const transcriptId = data.transcript_id || data.id;
+          startProgressPolling(transcriptId);
+        }
+
         return data;
       };
 
@@ -146,11 +187,23 @@ export default function FileUpload({
         fileType: file.type
       });
 
+      // Clear any remaining progress polling
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+
       setProgress(100);
       onTranscribe(result);
       onFileSelect?.(file); // Pass the audio file for playback
 
     } catch (err) {
+      // Clear progress polling on error
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+
       if (err.name === 'AbortError') {
         setError('Transcription cancelled');
       } else {
@@ -168,6 +221,24 @@ export default function FileUpload({
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+
+    // Clear progress polling
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+
+    setProgress(0);
+    setTranscriptId(null);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
   }, []);
 
   // Drag and drop handlers

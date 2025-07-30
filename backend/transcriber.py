@@ -103,6 +103,7 @@ class OptimizedTranscriber:
         self.max_connections = max_connections
         self.cache = {}  # Simple in-memory cache (Redis would be better for production)
         self.cache_ttl = 3600  # 1 hour
+        self.progress_store = {}  # Store transcription progress
         self._setup_connection_pool()
 
     def _setup_connection_pool(self):
@@ -154,6 +155,29 @@ class OptimizedTranscriber:
         """Cache successful transcription result"""
         self.cache[cache_key] = (result, time.time())
 
+    def _store_transcript_progress(self, transcript_id: str, progress: int):
+        """Store transcription progress"""
+        self.progress_store[transcript_id] = {
+            'progress': progress,
+            'timestamp': time.time()
+        }
+
+    def get_transcript_progress(self, transcript_id: str) -> Dict[str, Any]:
+        """Get transcription progress"""
+        if transcript_id in self.progress_store:
+            return self.progress_store[transcript_id]
+        return {'progress': 0, 'timestamp': time.time()}
+
+    def _calculate_progress(self, status: aai.TranscriptStatus) -> int:
+        """Calculate progress percentage based on transcript status"""
+        status_progress_map = {
+            aai.TranscriptStatus.queued: 10,
+            aai.TranscriptStatus.processing: 50,
+            aai.TranscriptStatus.completed: 100,
+            aai.TranscriptStatus.error: 0
+        }
+        return status_progress_map.get(status, 0)
+
     @backoff.on_exception(
         backoff.expo,
         (aai.AssemblyAIError, Exception),
@@ -169,7 +193,8 @@ class OptimizedTranscriber:
         speaker_labels: bool = False,
         speakers_expected: Optional[int] = None,
         min_speakers_expected: Optional[int] = None,
-        max_speakers_expected: Optional[int] = None
+        max_speakers_expected: Optional[int] = None,
+        progress_callback: Optional[callable] = None
     ) -> Dict[str, Any]:
         """Optimized transcription with caching and async processing"""
         metrics = PerformanceMetrics()
@@ -221,8 +246,28 @@ class OptimizedTranscriber:
 
             logger.info("Starting transcription", file_path=file_path, config=config)
 
-            # Transcribe with polling
-            transcript = transcriber.transcribe(file_path, config=config_obj)
+            # Submit transcription request
+            transcript = transcriber.submit(file_path, config=config_obj)
+            transcript_id = transcript.id
+
+            # Store transcript ID for progress tracking
+            self._store_transcript_progress(transcript_id, 0)
+
+            # Poll for completion with progress updates
+            while transcript.status not in [aai.TranscriptStatus.completed, aai.TranscriptStatus.error]:
+                await asyncio.sleep(2)  # Poll every 2 seconds
+                transcript = aai.Transcript.get_by_id(transcript_id)
+
+                # Calculate progress based on status
+                progress = self._calculate_progress(transcript.status)
+                self._store_transcript_progress(transcript_id, progress)
+
+                # Call progress callback if provided
+                if progress_callback:
+                    try:
+                        await progress_callback(transcript_id, progress, transcript.status.value)
+                    except Exception as e:
+                        logger.warning("Progress callback failed", error=str(e))
 
             if transcript.status == aai.TranscriptStatus.error:
                 metrics.errors += 1
@@ -232,10 +277,14 @@ class OptimizedTranscriber:
                     details={"transcript_id": transcript.id}
                 )
 
+            # Final progress update
+            self._store_transcript_progress(transcript_id, 100)
+
             result = {
                 "text": transcript.text,
                 "confidence": transcript.confidence,
                 "id": transcript.id,
+                "transcript_id": transcript_id,
                 "status": "completed",
                 "audio_duration": getattr(transcript, 'audio_duration', None),
                 "words": getattr(transcript, 'words', []) if hasattr(transcript, 'words') else [],

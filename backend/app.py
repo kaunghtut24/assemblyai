@@ -148,7 +148,8 @@ async def transcribe_audio(
     speaker_labels: bool = Form(False),
     speakers_expected: int = Form(None),
     min_speakers_expected: int = Form(None),
-    max_speakers_expected: int = Form(None)
+    max_speakers_expected: int = Form(None),
+    keyterms_prompt: str = Form(None)
 ):
     """
     Transcribe audio file with optimized performance and speaker diarization
@@ -161,6 +162,7 @@ async def transcribe_audio(
     - **speakers_expected**: Expected number of speakers (optional)
     - **min_speakers_expected**: Minimum number of speakers (optional)
     - **max_speakers_expected**: Maximum number of speakers (optional)
+    - **keyterms_prompt**: Domain-specific terms to improve accuracy (slam-1 model only)
     """
     start_time = time.time()
     temp_file_path = None
@@ -241,7 +243,8 @@ async def transcribe_audio(
                     speaker_labels=speaker_labels,
                     speakers_expected=speakers_expected,
                     min_speakers_expected=min_speakers_expected,
-                    max_speakers_expected=max_speakers_expected
+                    max_speakers_expected=max_speakers_expected,
+                    keyterms_prompt=keyterms_prompt
                 )
 
                 # Add performance metrics and file information to response

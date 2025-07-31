@@ -11,21 +11,33 @@ export default function PerformanceMonitor() {
     setLoading(true);
     try {
       const response = await fetch(buildApiUrl("/metrics"));
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const data = await response.json();
       setMetrics(data);
     } catch (error) {
-      console.error("Failed to fetch metrics:", error);
+      console.warn("Performance metrics unavailable:", error.message);
+      // Don't show metrics if backend is not available
+      setMetrics(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000); // Update every 30 seconds
+
+    // Set up interval only if initial fetch succeeds
+    const interval = setInterval(() => {
+      fetchMetrics();
+    }, 30000); // Update every 30 seconds
+
     return () => clearInterval(interval);
   }, []);
 
+  // Don't render if no metrics available and not loading
   if (!metrics && !loading) {
     return null;
   }

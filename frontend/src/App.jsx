@@ -5,6 +5,7 @@ import AudioPlayer from "./components/AudioPlayer";
 import ThemeToggle from "./components/ThemeToggle";
 import SpeakerSettings from "./components/SpeakerSettings";
 import ModelSelection from "./components/ModelSelection";
+import KeytermsPrompt from "./components/KeytermsPrompt";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { buildApiUrl } from "./config/api";
 import { useState, useCallback, useEffect } from "react";
@@ -26,16 +27,26 @@ function AppContent() {
   // Model selection
   const [speechModel, setSpeechModel] = useState("universal");
 
+  // Keyterms prompt for slam-1 model
+  const [keytermsPrompt, setKeytermsPrompt] = useState("");
+
   // Check API health on mount
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
         const response = await fetch(buildApiUrl("/health"));
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
         setApiHealth(data);
       } catch (error) {
-        console.error("API health check failed:", error);
-        setApiHealth({ status: "unhealthy", error: error.message });
+        console.warn("Backend server not available:", error.message);
+        setApiHealth({
+          status: "unavailable",
+          error: "Backend server not running. Please start the backend server.",
+          message: "The transcription service requires a backend server to be running."
+        });
       }
     };
 
@@ -44,7 +55,6 @@ function AppContent() {
 
   // Handle new transcription
   const handleTranscribe = useCallback((result) => {
-    console.log('handleTranscribe called with:', result);
     setTranscript(result);
 
     // Add to history
@@ -107,10 +117,34 @@ function AppContent() {
                 }
               `}>
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                API Offline
+                Backend Server Required
               </div>
             )}
           </div>
+
+          {/* Backend unavailable message */}
+          {apiHealth?.status !== "healthy" && (
+            <div className={`
+              mt-4 p-4 rounded-lg border text-sm
+              ${isDark
+                ? 'bg-yellow-900/20 border-yellow-700/30 text-yellow-200'
+                : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              }
+            `}>
+              <div className="flex items-start gap-2">
+                <span className="text-lg">⚠️</span>
+                <div>
+                  <div className="font-medium mb-1">Backend Server Required</div>
+                  <div className="text-xs opacity-90">
+                    To use transcription features, please start the backend server on port 8000.
+                    {window.location.hostname === 'localhost' && (
+                      <span> Run the <code className="bg-black/10 px-1 rounded">start-windows.bat</code> script or follow the setup guide.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -135,6 +169,7 @@ function AppContent() {
                 speakersExpected={speakersExpected}
                 minSpeakersExpected={minSpeakersExpected}
                 maxSpeakersExpected={maxSpeakersExpected}
+                keytermsPrompt={keytermsPrompt}
               />
 
               {/* Model Selection */}
@@ -142,6 +177,15 @@ function AppContent() {
                 <ModelSelection
                   speechModel={speechModel}
                   setSpeechModel={setSpeechModel}
+                />
+              </div>
+
+              {/* Keyterms Prompt for slam-1 model */}
+              <div className="mt-6">
+                <KeytermsPrompt
+                  speechModel={speechModel}
+                  keytermsPrompt={keytermsPrompt}
+                  setKeytermsPrompt={setKeytermsPrompt}
                 />
               </div>
 

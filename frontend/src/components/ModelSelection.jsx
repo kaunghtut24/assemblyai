@@ -14,9 +14,9 @@ export default function ModelSelection({ speechModel, setSpeechModel }) {
     {
       id: 'slam-1',
       name: 'Slam-1',
-      description: 'Advanced prompt-based model with enhanced understanding capabilities.',
+      description: 'Advanced model with domain-specific term support for improved accuracy.',
       recommended: false,
-      features: ['Prompt-based', 'Enhanced understanding', 'Latest technology']
+      features: ['Domain-specific terms', 'Enhanced accuracy', 'Contextual understanding']
     }
   ];
 
@@ -115,12 +115,13 @@ export default function ModelSelection({ speechModel, setSpeechModel }) {
 
       <div className={`
         text-xs p-3 rounded-lg
-        ${isDark 
-          ? 'bg-gray-700/50 text-gray-400' 
+        ${isDark
+          ? 'bg-gray-700/50 text-gray-400'
           : 'bg-gray-100 text-gray-600'
         }
       `}>
-        <strong>Note:</strong> Different models may produce varying results. Universal is recommended for most use cases.
+        <strong>Note:</strong> Universal is recommended for most use cases.
+        Slam-1 allows you to provide domain-specific terms to improve accuracy for specialized vocabulary.
       </div>
     </div>
   );

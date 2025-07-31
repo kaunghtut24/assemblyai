@@ -171,7 +171,8 @@ class OptimizedTranscriber:
         speaker_labels: bool = False,
         speakers_expected: Optional[int] = None,
         min_speakers_expected: Optional[int] = None,
-        max_speakers_expected: Optional[int] = None
+        max_speakers_expected: Optional[int] = None,
+        keyterms_prompt: Optional[str] = None
     ) -> Dict[str, Any]:
         """Optimized transcription with caching and async processing"""
         metrics = PerformanceMetrics()
@@ -184,7 +185,8 @@ class OptimizedTranscriber:
                 "speaker_labels": speaker_labels,
                 "speakers_expected": speakers_expected,
                 "min_speakers_expected": min_speakers_expected,
-                "max_speakers_expected": max_speakers_expected
+                "max_speakers_expected": max_speakers_expected,
+                "keyterms_prompt": keyterms_prompt
             }, sort_keys=True)
 
             # Check cache first
@@ -207,6 +209,13 @@ class OptimizedTranscriber:
                 "language_code": language_code,
                 "speaker_labels": speaker_labels
             }
+
+            # Add keyterms_prompt for slam-1 model
+            if keyterms_prompt and speech_model == "slam-1":
+                config_kwargs["keyterms_prompt"] = keyterms_prompt
+                logger.info("Using keyterms_prompt for slam-1 model",
+                           keyterms_length=len(keyterms_prompt),
+                           file_path=file_path)
 
             # Add speaker options if specified
             if speakers_expected is not None:

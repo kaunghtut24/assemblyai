@@ -55,7 +55,8 @@ export default function FileUpload({
   speakerLabels = false,
   speakersExpected = null,
   minSpeakersExpected = null,
-  maxSpeakersExpected = null
+  maxSpeakersExpected = null,
+  keytermsPrompt = ""
 }) {
   const { isDark } = useTheme();
   const [file, setFile] = useState(null);
@@ -139,6 +140,11 @@ export default function FileUpload({
           }
         }
 
+        // Add keyterms prompt for slam-1 model
+        if (keytermsPrompt && speechModel === "slam-1") {
+          formData.append("keyterms_prompt", keytermsPrompt);
+        }
+
         // Perform transcription request
         const response = await fetch(buildApiUrl("/transcribe"), {
           method: "POST",
@@ -166,7 +172,6 @@ export default function FileUpload({
       });
 
       // Complete transcription
-      console.log('Transcription result received:', result);
       setLoading(false);
       onTranscribe(result);
       onFileSelect?.(file); // Pass the audio file for playback

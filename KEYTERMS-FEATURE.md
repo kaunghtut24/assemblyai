@@ -7,9 +7,10 @@ The **Keyterms Prompt** feature leverages AssemblyAI's slam-1 model to improve t
 ## How It Works
 
 ### Backend Implementation
-- **Parameter**: `keyterms_prompt` (string, optional)
+- **Parameter**: `keyterms_prompt` (string, optional) - converted to list internally
 - **Model Support**: Only available with `slam-1` speech model
 - **API Endpoint**: `/transcribe` (POST)
+- **Format**: Comma-separated string converted to list of terms
 - **Validation**: Automatically applied only when slam-1 model is selected
 
 ### Frontend Implementation
@@ -63,9 +64,10 @@ Business terms: revenue, stakeholder, quarterly, metrics, ROI, KPI, synergy
 
 - **File**: `backend/transcriber.py`
   - Added `keyterms_prompt` parameter to `transcribe_with_local_file()`
+  - Converts comma-separated string to list format for AssemblyAI API
   - Conditional application only for slam-1 model
   - Included in caching configuration
-  - Added logging for keyterms usage
+  - Added logging for keyterms usage with term count
 
 ### Frontend Changes
 - **File**: `frontend/src/components/KeytermsPrompt.jsx`

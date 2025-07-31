@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useTheme } from '../contexts/ThemeContext';
+import ExportOptions from './ExportOptions';
 
 export default function TranscriptDisplay({ result, highlightedWordIndex = -1 }) {
   const { isDark } = useTheme();
@@ -27,18 +28,7 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
     }
   }, [result.text]);
 
-  // Download as text file
-  const downloadTranscript = useCallback(() => {
-    const blob = new Blob([result.text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transcript_${new Date().toISOString().slice(0, 19)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [result.text]);
+
 
   // Format confidence as percentage
   const formatConfidence = (confidence) => {
@@ -325,18 +315,7 @@ export default function TranscriptDisplay({ result, highlightedWordIndex = -1 })
           >
             {copied ? '✓ Copied!' : '📋 Copy'}
           </button>
-          <button
-            onClick={downloadTranscript}
-            className={`
-              flex-1 sm:flex-none px-3 py-2 sm:py-1 text-sm rounded-md transition-colors touch-manipulation min-h-[44px] sm:min-h-0
-              ${isDark
-                ? 'bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-blue-100'
-                : 'bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-700'
-              }
-            `}
-          >
-            💾 Download
-          </button>
+          <ExportOptions result={result} />
         </div>
       </div>
 

@@ -212,9 +212,12 @@ class OptimizedTranscriber:
 
             # Add keyterms_prompt for slam-1 model
             if keyterms_prompt and speech_model == "slam-1":
-                config_kwargs["keyterms_prompt"] = keyterms_prompt
+                # Convert string to list of terms (split by comma and clean up)
+                keyterms_list = [term.strip() for term in keyterms_prompt.split(',') if term.strip()]
+                config_kwargs["keyterms_prompt"] = keyterms_list
                 logger.info("Using keyterms_prompt for slam-1 model",
-                           keyterms_length=len(keyterms_prompt),
+                           keyterms_count=len(keyterms_list),
+                           keyterms_list=keyterms_list[:5],  # Log first 5 terms
                            file_path=file_path)
 
             # Add speaker options if specified

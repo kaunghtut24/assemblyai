@@ -80,7 +80,7 @@ export default function KeytermsPrompt({
           <textarea
             value={keytermsPrompt}
             onChange={(e) => setKeytermsPrompt(e.target.value)}
-            placeholder="Enter domain-specific terms, names, or context that might appear in your audio..."
+            placeholder="Enter terms separated by commas: term1, term2, term3..."
             rows={3}
             className={`
               w-full px-3 py-2 border rounded-lg resize-none transition-colors
@@ -124,13 +124,13 @@ export default function KeytermsPrompt({
 
       <div className={`
         text-xs p-3 rounded-lg
-        ${isDark 
-          ? 'bg-gray-700/50 text-gray-400' 
+        ${isDark
+          ? 'bg-gray-700/50 text-gray-400'
           : 'bg-gray-100 text-gray-600'
         }
       `}>
-        <strong>Tips:</strong> Include technical terms, proper names, acronyms, or industry-specific 
-        vocabulary that might be difficult to recognize. This feature works best with the slam-1 model.
+        <strong>Format:</strong> Separate terms with commas. Include technical terms, proper names,
+        acronyms, or industry-specific vocabulary that might be difficult to recognize.
       </div>
     </div>
   );
